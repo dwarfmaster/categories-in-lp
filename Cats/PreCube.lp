@@ -1,4 +1,8 @@
 
+// See the following paper for correction proof:
+//   Grandis, M., & Mauri, L. (2003). Cubical Sets And Their Site. Theory and
+//   Applications of Categories, 11(), 185–211.
+
 // Universe setting for polymorphism
 symbol U : TYPE;
 symbol El : U → TYPE;
