@@ -19,12 +19,16 @@ with plus $n (S $m) ↪ S (plus $n $m)
 with plus $n (plus $m $k) ↪ plus (plus $n $m) $k;
 assert x y z ⊢ plus (plus x y) z ≡ plus x (plus y z);
 
+// Simple type with two elements
+constant symbol Pol : TYPE;
+constant symbol Pos : Pol;
+constant symbol Neg : Pol;
+
 // Free formulation of hom sets
 constant symbol HomC : El N → El N → U;
 symbol Hom (n m : El N) : TYPE ≔ El (HomC n m);
-constant symbol i0 : Hom 0 1;
-constant symbol i1 : Hom 0 1;
-constant symbol D  : Hom 1 0;
+constant symbol δ : Pol → Hom 0 1;
+constant symbol ε : Hom 1 0;
 constant symbol id (n : El N) : Hom n n;
 
 // Product on arrows
@@ -43,18 +47,14 @@ rule C $f (C $g $h) ↪ C (C $f $g) $h
 with C (id _) $f ↪ $f
 with C $f (id _) ↪ $f;
 // Constraints
-rule C D i0 ↪ id 0
-with C D i1 ↪ id 0;
+rule C ε (δ _) ↪ id 0;
 // Compatibility with product
 rule C (@P $n $m _ _ $f1 $g1) (@P _ _ $n $m $f2 $g2) ↪ P (C $f1 $f2) (C $g1 $g2);
 // Checks
-assert n ⊢ C (P D (id n)) (P i0 (id n)) ≡ id n;
+assert n ⊢ C (P ε (id n)) (P (δ Neg) (id n)) ≡ id n;
 
 // Higher faces and degeneracies
-symbol δ0 (n i : El N) : Hom (plus n i) (plus n (plus 1 i))
-     ≔ P (id n) (P i0 (id i));
-symbol δ1 (n i : El N) : Hom (plus n i) (plus n (plus 1 i))
-     ≔ P (id n) (P i1 (id i));
-symbol ε (n i : El N) : Hom (plus n (plus 1 i)) (plus n i)
-     ≔ P (id n) (P D (id i));
-
+symbol δ' (pol : Pol) (n m : El N) : Hom (plus n m) (plus n (plus 1 m))
+     ≔ P (id n) (P (δ pol) (id m));
+symbol ε' (n i : El N) : Hom (plus n (plus 1 i)) (plus n i)
+     ≔ P (id n) (P ε (id i));
