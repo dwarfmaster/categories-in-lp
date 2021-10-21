@@ -50,7 +50,8 @@ with C $f (id _) ↪ $f;
 // Constraints
 rule C ε (δ _) ↪ id 0;
 // Compatibility with product
-rule C (@P $n $m _ _ $f1 $g1) (@P _ _ $n $m $f2 $g2) ↪ P (C $f1 $f2) (C $g1 $g2);
+rule C (@P $n $m _ _ $f1 $g1) (@P _ _ $n $m $f2 $g2) ↪ P (C $f1 $f2) (C $g1 $g2)
+with C $f (@P _ _ _ 0 $f2 $g) ↪ P (C $f $f2) $g;
 // Checks
 assert n ⊢ C (P ε (id n)) (P (δ Neg) (id n)) ≡ id n;
 
