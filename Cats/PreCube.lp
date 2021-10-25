@@ -1,5 +1,6 @@
 
 require open Cats.Universe;
+require open Cats.Cat;
 
 // See the following paper for correction proof:
 //   Grandis, M., & Mauri, L. (2003). Cubical Sets And Their Site. Theory and
@@ -20,43 +21,39 @@ with plus $n (S $m) ↪ S (plus $n $m)
 with plus $n (plus $m $k) ↪ plus (plus $n $m) $k;
 assert x y z ⊢ plus (plus x y) z ≡ plus x (plus y z);
 
+// Declaration of cubical category
+constant symbol □ : Cat;
+rule Ob □ ↪ El N;
+
 // Simple type with two elements
 constant symbol Pol : TYPE;
 constant symbol Pos : Pol;
 constant symbol Neg : Pol;
 
 // Free formulation of hom sets
-constant symbol HomC : El N → El N → U;
-symbol Hom (n m : El N) : TYPE ≔ El (HomC n m);
-constant symbol δ : Pol → Hom 0 1;
-constant symbol ε : Hom 1 0;
-constant symbol id (n : El N) : Hom n n;
+constant symbol δ : Pol → @Mph □ 0 1;
+constant symbol ε : @Mph □ 1 0;
 
 // Product on arrows
-symbol P {n m i j : El N} : Hom n i → Hom m j → Hom (plus n m) (plus i j);
+symbol P {n m i j : Ob □} : @Mph □ n i → @Mph □ m j → @Mph □ (plus n m) (plus i j);
 rule P $f (P $g $h) ↪ P (P $f $g) $h
-with P $f (id 0) ↪ $f
-with P (id 0) $f ↪ $f
-with P (id $n) (id $m) ↪ id (plus $n $m);
-assert n m i j (f : Hom n m) (g : Hom i j) ⊢ P (P f (id 0)) g ≡ P f g;
-assert n m k ⊢ P (id n) (P (id m) (id k)) ≡ P (id (plus n m)) (id k);
+with P $f (@Id □ 0) ↪ $f
+with P (@Id □ 0) $f ↪ $f
+with P (@Id □ $n) (@Id □ $m) ↪ @Id □ (plus $n $m);
+assert n m i j (f : @Mph □ n m) (g : @Mph □ i j) ⊢ P (P f (@Id □ 0)) g ≡ P f g;
+assert n m k ⊢ P (@Id □ n) (P (@Id □ m) (@Id □ k)) ≡ P (@Id □ (plus n m)) (@Id □ k);
 
 // Composition
-symbol C {n m k : El N} : Hom m k → Hom n m → Hom n k;
-// Associativty and unitality
-rule C $f (C $g $h) ↪ C (C $f $g) $h
-with C (id _) $f ↪ $f
-with C $f (id _) ↪ $f;
 // Constraints
-rule C ε (δ _) ↪ id 0;
+rule Comp ε (δ _) ↪ @Id □ 0;
 // Compatibility with product
-rule C (@P $n $m _ _ $f1 $g1) (@P _ _ $n $m $f2 $g2) ↪ P (C $f1 $f2) (C $g1 $g2)
-with C $f (@P _ _ _ 0 $f2 $g) ↪ P (C $f $f2) $g;
+rule Comp (@P $n $m _ _ $f1 $g1) (@P _ _ $n $m $f2 $g2) ↪ P (Comp $f1 $f2) (Comp $g1 $g2)
+with Comp $f (@P _ _ _ 0 $f2 $g) ↪ P (Comp $f $f2) $g;
 // Checks
-assert n ⊢ C (P ε (id n)) (P (δ Neg) (id n)) ≡ id n;
+assert n ⊢ Comp (P ε (@Id □ n)) (P (δ Neg) (@Id □ n)) ≡ @Id □ n;
 
 // Higher faces and degeneracies
-symbol δ' (pol : Pol) (n m : El N) : Hom (plus n m) (plus n (plus 1 m))
-     ≔ P (id n) (P (δ pol) (id m));
-symbol ε' (n i : El N) : Hom (plus n (plus 1 i)) (plus n i)
-     ≔ P (id n) (P ε (id i));
+symbol δ' (pol : Pol) (n m : Ob □) : @Mph □ (plus n m) (S (plus n m))
+     ≔ P (@Id □ n) (P (δ pol) (@Id □ m));
+symbol ε' (n i : El N) : @Mph □ (S (plus n i)) (plus n i)
+     ≔ P (@Id □ n) (P ε (@Id □ i));
