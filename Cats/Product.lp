@@ -1,39 +1,37 @@
 
 require open Cats.Universe;
-require open Cats.PreCube;
+require open Cats.Cat;
 
 // Product category
-constant symbol PCat' : U;
-symbol PCat : TYPE ≔ El PCat';
-symbol mkP : El N → El N → PCat;
-symbol π1 : PCat → El N;
-symbol π2 : PCat → El N;
+constant symbol PCat' : Cat → Cat → Cat;
+symbol PCat (C D : Cat) : TYPE ≔ Ob (PCat' C D);
+symbol mkP {C D : Cat} : Ob C → Ob D → PCat C D;
+symbol π1 {C D : Cat} : PCat C D → Ob C;
+symbol π2 {C D : Cat} : PCat C D → Ob D;
 rule π1 (mkP $p _) ↪ $p
 with π2 (mkP _ $p) ↪ $p
 with mkP (π1 $p) (π2 $p) ↪ $p;
 
 // Hom sets
-constant symbol PHom' : PCat → PCat → U;
-symbol PHom (a b : PCat) : TYPE ≔ El (PHom' a b);
-symbol mkPf {a b c d : El N} : Hom a b → Hom c d → PHom (mkP a c) (mkP b d);
-symbol πf1 {a b : PCat} : PHom a b → Hom (π1 a) (π1 b);
-symbol πf2 {a b : PCat} : PHom a b → Hom (π2 a) (π2 b);
+symbol PHom {C D : Cat} (a b : PCat C D) : TYPE ≔ @Mph (PCat' C D) a b;
+symbol mkPf {C D : Cat} {a b : Ob C} {c d : Ob D} : @Mph C a b → @Mph D c d → PHom (mkP a c) (mkP b d);
+symbol πf1 {C D : Cat} {a b : PCat C D} : PHom a b → @Mph C (π1 a) (π1 b);
+symbol πf2 {C D : Cat} {a b : PCat C D} : PHom a b → @Mph D (π2 a) (π2 b);
 rule πf1 (mkPf $f _) ↪ $f
 with πf2 (mkPf _ $f) ↪ $f
 with mkPf (πf1 $f) (πf2 $f) ↪ $f;
 
 // Identity
-symbol Id (a : PCat) : PHom a a ≔ mkPf (id (π1 a)) (id (π2 a));
+rule @Id (PCat' $C $D) $a ↪ mkPf (@Id $C (π1 $a)) (@Id $D (π2 $a));
 
 // Composition
-symbol PC {a b c : PCat} : PHom b c → PHom a b → PHom a c;
 // This should be the natural rule but it won't work:
-//   PC (mkPf $f1 $f2) (mkPf $g1 $g2) ↪ mkPf (C $f1 $g1) (C $f2 $g2);
-rule PC $f $g ↪ mkPf (C (πf1 $f) (πf1 $g)) (C (πf2 $f) (πf2 $g));
-assert (a b : PCat) (f : PHom a b) ⊢ PC f (Id a) ≡ f;
-assert (a b : PCat) (f : PHom a b) ⊢ PC (Id b) f ≡ f;
-assert (a b c d : PCat) (f : PHom c d) (g : PHom b c) (h : PHom a b) ⊢ PC (PC f g) h ≡ PC f (PC g h);
+//   @Comp (PCat' $C $D) _ _ _ (mkPf $f1 $f2) (mkPf $g1 $g2) ↪ mkPf (@Comp $C _ _ _ $f1 $g1) (@Comp $D _ _ _ $f2 $g2);
+rule @Comp (PCat' _ _) _ _ _ $f $g ↪ mkPf (Comp (πf1 $f) (πf1 $g)) (Comp (πf2 $f) (πf2 $g));
+assert (C D : Cat) (a b : PCat C D) (f : PHom a b) ⊢ f ∘ Id a ≡ f;
+assert (C D : Cat) (a b : PCat C D) (f : PHom a b) ⊢ Id b ∘ f ≡ f;
+assert (C D : Cat) (a b c d : PCat C D) (f : PHom c d) (g : PHom b c) (h : PHom a b) ⊢ (f ∘ g) ∘ h ≡ f ∘ (g ∘ h);
 
 // Check that (π1, πf1) is indeed a functor
-assert (a : PCat) ⊢ πf1 (Id a) ≡ id (π1 a);
-assert (a b c : PCat) (f : PHom b c) (g : PHom a b) ⊢ πf1 (PC f g) ≡ C (πf1 f) (πf1 g);
+assert (C D : Cat) (a : PCat C D) ⊢ πf1 (Id a) ≡ @Id C (π1 a);
+assert (C D : Cat) (a b c : PCat C D) (f : PHom b c) (g : PHom a b) ⊢ πf1 (f ∘ g) ≡ πf1 f ∘ πf1 g;
