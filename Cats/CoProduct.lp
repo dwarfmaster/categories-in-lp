@@ -1,61 +1,67 @@
 
 require open Cats.Universe;
-require open Cats.PreCube;
+require open Cats.Cat;
 
 // Type 2
 constant symbol T2 : TYPE;
 constant symbol i0 : T2;
 constant symbol i1 : T2;
+symbol elim2 (P : T2 → U) : El (P i0) → El (P i1) → Π(i : T2), El (P i);
+rule elim2 _ $p0 _ i0 ↪ $p0
+with elim2 _ _ $p1 i1 ↪ $p1;
 
 // Objects
-constant symbol CPCat' : U;
-symbol CPCat : TYPE ≔ El CPCat';
-symbol TFam : T2 → U;
-rule TFam i0 ↪ N
-with TFam i1 ↪ N;
-symbol ι (i : T2) : El (TFam i) → CPCat;
-symbol ρ : CPCat → T2;
-symbol R (a : CPCat) : El (TFam (ρ a));
+constant symbol CPCat' : Cat → Cat → Cat;
+symbol CPCat (C D : Cat) : TYPE ≔ Ob (CPCat' C D);
+symbol TFam : Cat → Cat → T2 → Cat;
+rule TFam $C _ i0 ↪ $C
+with TFam _ $D i1 ↪ $D;
+symbol ι {C D : Cat} (i : T2) : Ob (TFam C D i) → CPCat C D;
+symbol ρ {C D : Cat} : CPCat C D → T2;
+symbol R {C D : Cat} (a : CPCat C D) : Ob (TFam C D (ρ a));
 rule ρ (ι $i _) ↪ $i;
 rule R (ι _ $x) ↪ $x;
-rule ι (ρ $a) (R $a) ↪ $a;
+rule @ι $C $D (@ρ $C $D $a) (@R $C $D $a) ↪ $a;
 
 // Partial cast, aka weakened R
-symbol unsafe_cast (i : T2) : CPCat → El (TFam i);
-rule unsafe_cast (ρ $a) $a ↪ R $a
-with unsafe_cast $i (ι $i $a) ↪ $a
-with ι $i (unsafe_cast $i $a) ↪ $a;
+symbol uR {C D : Cat} (i : T2) : CPCat C D → Ob (TFam C D i);
+rule uR (ρ $a) $a ↪ R $a
+with uR $i (ι $i $a) ↪ $a
+with @ι $C $D $i (@uR $C $D $i $a) ↪ $a;
 
 // Morphisms
-constant symbol CPHom' : CPCat → CPCat → U;
-symbol CPHom (a b : CPCat) : TYPE ≔ El (CPHom' a b);
-symbol HFam (i : T2) : El (TFam i) → El (TFam i) → U;
-rule HFam i0 $a $b ↪ HomC $a $b
-with HFam i1 $a $b ↪ HomC $a $b;
-symbol ι' (i : T2) (a b : El (TFam i)) : El (HFam i a b) → CPHom (ι i a) (ι i b);
+symbol CPHom {C D : Cat} (a b : CPCat C D) : TYPE ≔ @Mph (CPCat' C D) a b;
+symbol HFam {C D : Cat} (i : T2) : Ob (TFam C D i) → Ob (TFam C D i) → U;
+rule @HFam $C _ i0 $a $b ↪ @Mph' $C $a $b
+with @HFam _ $D i1 $a $b ↪ @Mph' $D $a $b;
+symbol ι' {C D : Cat} (i : T2) (a b : Ob (TFam C D i)) : El (@HFam C D i a b) → @Mph (CPCat' C D) (@ι C D i a) (@ι C D i b);
 
 // Partial cast of morphism
-symbol unsafe_castF_l (a b : CPCat) : CPHom a b → El (HFam (ρ a) (R a) (unsafe_cast (ρ a) b));
-symbol unsafe_castF_r (a b : CPCat) : CPHom a b → El (HFam (ρ b) (unsafe_cast (ρ b) a) (R b));
-rule unsafe_castF_l _ _ (ι' _ _ _ $f) ↪ $f
-with unsafe_castF_r _ _ (ι' _ _ _ $f) ↪ $f;
+symbol uRf {C D : Cat} (a b : CPCat C D) (i : T2) : CPHom a b → El (@HFam C D i (uR i a) (uR i b));
+rule uRf _ _ $i (ι' $i _ _ $f) ↪ $f
+with uRf $a $b i0 (elim2 _ (ι' i0 (uR i0 $a) (uR i0 $b) $f) _ _) ↪ $f
+with uRf $a $b i1 (elim2 _ _ (ι' i1 (uR i1 $a) (uR i1 $b) $f) _) ↪ $f;
+rule elim2 (λ _, @Mph' (CPCat' _ _) _ _) (ι' i0 _ _ (uRf _ _ i0 $f)) (ι' i1 _ _ (uRf _ _ i1 $f)) _ ↪ $f;
 
 // Identity
-symbol IdFam (i : T2) (a : El (TFam i)) : El (HFam i a a);
-rule IdFam i0 $a ↪ id $a
-with IdFam i1 $a ↪ id $a;
-symbol CId (a : CPCat) : CPHom a a
-     ≔ ι' (ρ a) (R a) (R a) (IdFam (ρ a) (R a));
+rule @Id (CPCat' $C $D) $a
+   ↪ elim2 (λ _, @Mph' (CPCat' $C $D) $a $a)
+           (ι' i0 (uR i0 $a) (uR i0 $a) (@Id $C (uR i0 $a)))
+           (ι' i1 (uR i1 $a) (uR i1 $a) (@Id $D (uR i1 $a)))
+           (ρ $a);
 
 // Composition
-symbol CPC {a b c : CPCat} : CPHom b c → CPHom a b → CPHom a c;
-symbol CFam (i : T2) {a b c : El (TFam i)} : El (HFam i b c) → El (HFam i a b) → El (HFam i a c);
-rule CFam i0 $f $g ↪ C $f $g
-with CFam i1 $f $g ↪ C $f $g;
-rule @CPC $a $b $c $f $g ↪ ι' (ρ $b) (unsafe_cast (ρ $b) $a) (unsafe_cast (ρ $b) $c)
-                               (@CFam (ρ $b) (unsafe_cast (ρ $b) $a) (R $b) (unsafe_cast (ρ $b) $c)
-                                  (unsafe_castF_l $b $c $f) (unsafe_castF_r $a $b $g));
+symbol CPC {C D : Cat} {a b c : CPCat C D} : @CPHom C D b c → @CPHom C D a b → @CPHom C D a c;
+rule @CPC $C $D $a $b $c $f $g
+  ↪ elim2 (λ _, @Mph' (CPCat' $C $D) $a $c)
+          (ι' i0 (uR i0 $a) (uR i0 $c) (@Comp $C (uR i0 $a) (uR i0 $b) (uR i0 $c) (uRf $b $c i0 $f) (uRf $a $b i0 $g)))
+          (ι' i1 (uR i1 $a) (uR i1 $c) (@Comp $D (uR i1 $a) (uR i1 $b) (uR i1 $c) (uRf $b $c i1 $f) (uRf $a $b i1 $g)))
+          (ρ $a);
 
 // Checks
-assert a b (f : CPHom a b) ⊢ CPC (CId b) f ≡ f;
-assert a b (f : CPHom a b) ⊢ CPC f (CId a) ≡ f;
+assert C D (a b : CPCat C D) (f : CPHom a b) ⊢ CPC (Id b) f ≡ f;
+assert C D (a b : CPCat C D) (f : CPHom a b) ⊢ CPC f (Id a) ≡ f;
+assert C D (a b c d : CPCat C D) (f : CPHom c d) (g : CPHom b c) (h : CPHom a b) ⊢ CPC (CPC f g) h ≡ CPC f (CPC g h);
+
+// Make CPC cat compositon
+rule @Comp (CPCat' $C $D) $a $b $c $f $g ↪ @CPC $C $D $a $b $c $f $g;
