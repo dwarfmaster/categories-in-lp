@@ -1,6 +1,7 @@
 
 require open Cats.Universe;
 require open Cats.Cat;
+require open Cats.Functor;
 
 // Type 2
 constant symbol T2 : TYPE;
@@ -57,3 +58,11 @@ assert C D (a b c d : CPCat C D) (f : CPHom c d) (g : CPHom b c) (h : CPHom a b)
 
 // Make CPC cat compositon
 rule @Comp (CPCat' $C $D) $a $b $c $f $g ↪ @CPC $C $D $a $b $c $f $g;
+
+// Make the two injections functors
+constant symbol ι1 (C D : Cat) : Funct C (CPCat' C D);
+constant symbol ι2 (C D : Cat) : Funct D (CPCat' C D);
+rule Fob (ι1 $C $D) $x ↪ @ι $C $D i0 $x
+with Fob (ι2 $C $D) $x ↪ @ι $C $D i1 $x;
+rule Fmph (ι1 _ _) $f ↪ ι' i0 _ _ $f
+with Fmph (ι2 _ _) $f ↪ ι' i1 _ _ $f;

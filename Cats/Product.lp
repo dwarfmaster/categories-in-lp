@@ -1,6 +1,7 @@
 
 require open Cats.Universe;
 require open Cats.Cat;
+require open Cats.Functor;
 
 // Product category
 constant symbol PCat' : Cat → Cat → Cat;
@@ -35,3 +36,14 @@ assert (C D : Cat) (a b c d : PCat C D) (f : PHom c d) (g : PHom b c) (h : PHom 
 // Check that (π1, πf1) is indeed a functor
 assert (C D : Cat) (a : PCat C D) ⊢ πf1 (Id a) ≡ @Id C (π1 a);
 assert (C D : Cat) (a b c : PCat C D) (f : PHom b c) (g : PHom a b) ⊢ πf1 (f ∘ g) ≡ πf1 f ∘ πf1 g;
+// Check that (π2, πf2) is indeed a functor
+assert (C D : Cat) (a : PCat C D) ⊢ πf2 (Id a) ≡ @Id D (π2 a);
+assert (C D : Cat) (a b c : PCat C D) (f : PHom b c) (g : PHom a b) ⊢ πf2 (f ∘ g) ≡ πf2 f ∘ πf2 g;
+
+// Define projections as functors
+constant symbol Π1 (C D : Cat) : Funct (PCat' C D) C;
+constant symbol Π2 (C D : Cat) : Funct (PCat' C D) D;
+rule Fob (Π1 _ _) $x ↪ π1 $x
+with Fob (Π2 _ _) $x ↪ π2 $x;
+rule Fmph (Π1 _ _) $f ↪ πf1 $f
+with Fmph (Π2 _ _) $f ↪ πf2 $f;
