@@ -1,5 +1,5 @@
 
-OBJS=Test.vo
+OBJS=Test.vo Finite.vo FiniteCategory.vo FiniteLimits.vo
 
 .PHONY:all
 all: $(OBJS)
