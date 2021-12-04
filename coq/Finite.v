@@ -13,6 +13,17 @@ Section NatLemmas.
     | S n => n
     end.
 
+  Lemma set_uip (S : Type) (H : IsHSet S) (a b : S) (p q : a = b) : p = q.
+  Proof.
+    unfold IsHSet in H. simpl in H.
+    pose (H' := H a b p q). destruct H'. exact center.
+  Qed.
+
+  Lemma nat_uip (a b : nat) (p q : a = b) : p = q.
+  Proof.
+    apply set_uip. exact hset_nat.
+  Qed.
+
 End NatLemmas.
 
 Section FinTypes.
@@ -26,6 +37,20 @@ Section FinTypes.
   Definition fin_to_nat {n : nat} (x : Fin n) : nat := fin_to_nat_rec 0 x.
   (* Interprets Fin n as the type [1..n] *)
   Definition fin_to_nat1 {n : nat} (x : Fin n) : nat := fin_to_nat_rec 1 x.
+
+  Lemma fin_destr (n : nat) (f : Fin (S n)) :
+    (f = F1 (S n) n 1) + (exists(f' : Fin n), f = FS (S n) n 1 f').
+  Proof.
+    destruct f; [ left | right ].
+    - rewrite <- (paths_ind n (fun n' p' => F1 (S n) n' (ap S p') = F1 (S n) n 1)
+                           1 m (Nat.path_nat_S _ _ p)).
+      f_ap. apply nat_uip.
+    - pose (H := paths_ind
+                   n (fun n' p' => forall(f : Fin n'),
+                          {f' : Fin n & FS n.+1 n' (ap S p') f = FS n.+1 n 1 f'})
+                   (fun f => {| proj1 := f; proj2 := 1|}) m (Nat.path_nat_S _ _ p) f).
+      destruct H as [ f' Heq ]. exists f'. rewrite <- Heq. f_ap. apply nat_uip.
+  Qed.
 
   Definition add_fin {m : nat} (n : nat) (y : Fin m) : Fin (n + m)%nat.
   Proof.
