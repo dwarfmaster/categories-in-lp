@@ -52,6 +52,24 @@ Section FinTypes.
       destruct H as [ f' Heq ]. exists f'. rewrite <- Heq. f_ap. apply nat_uip.
   Qed.
 
+  Lemma fin_0 : Fin 0 -> False.
+  Proof.
+    intro f. destruct f; inversion p.
+  Qed.
+
+  Lemma fin_1 (f : Fin 1) : f = F1 1 0 1.
+  Proof.
+    destruct (fin_destr _ f) as [ p | [ f' _ ]]; [ exact p | idtac ].
+    apply Empty_ind. apply fin_0. exact f'.
+  Qed.
+
+  Lemma fin_1_contr : Contr (Fin 1).
+  Proof.
+    srapply Build_Contr.
+    - exact (F1 1 0 1).
+    - intro f. symmetry. exact (fin_1 f).
+  Qed.
+
   Definition add_fin {m : nat} (n : nat) (y : Fin m) : Fin (n + m)%nat.
   Proof.
     induction n; simpl.
