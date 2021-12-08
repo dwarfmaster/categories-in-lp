@@ -111,8 +111,8 @@ Section GraphEqualizer.
       pose (Hcomm := cn_comm (lim_cone E) (F1 2 1 1));
         unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
         simpl in Hcomm. rewrite Hcomm.
-        destruct (fin_destr _ n') as [ Hn' | [ n'' Hn' ] ]; rewrite Hn'; try reflexivity.
-      apply Empty_ind. apply fin_0. exact n''.
+      destruct (fin_destr _ n') as [ Hn' | [ n'' Hn' ] ]; rewrite Hn';
+        [ reflexivity | inv_fin_0 ].
   Defined.
   Lemma eq_uniq {a b c : object C} (f g : morphism C a b) (h : morphism C c a) (E : Equalizer f g) :
     forall(m1 m2 : morphism C c (eq_obj f g E)),
@@ -340,3 +340,129 @@ Section GraphDestruction.
   Qed.
 
 End GraphDestruction.
+
+Section GraphProduct.
+  Context {C : PreCategory}.
+
+  Definition ProductGr (a b : object C) : Graph C 2 0.
+  Proof.
+    srapply mkGraph; intro x.
+    - destruct x; [ exact a | exact b ].
+    - inv_fin_0.
+  Defined.
+  Definition Product (a b : object C) := Limit (ProductGr a b).
+  Definition prod_obj {a b : object C} (p : Product a b) : object C :=
+    cn_top (lim_cone p).
+  Definition pi1 {a b : object C} (p : Product a b) : morphism C (prod_obj p) a :=
+    cn_side (lim_cone p) (F1 2 1 1).
+  Definition pi2 {a b : object C} (p : Product a b) : morphism C (prod_obj p) b :=
+    cn_side (lim_cone p) (FS 2 1 1 (F1 1 0 1)).
+
+  Definition prod_cone {a b c : object C} (f : morphism C c a) (g : morphism C c b) :
+    Cone (ProductGr a b).
+  Proof.
+    srapply mkCone.
+    - exact c.
+    - intro n; destruct n; [ exact f | exact g ].
+    - inv_fin_0'.
+  Defined.
+  Lemma product_ex {a b : object C} (P : Product a b) :
+    forall(c : object C), forall(f : morphism C c a), forall(g : morphism C c b),
+      exists(e : morphism C c (prod_obj P)), f = pi1 P o e /\ g = pi2 P o e.
+  Proof.
+    intros c f g. pose (cn := prod_cone f g). pose (mph := lim_ex P cn). exists(cnmph_mph mph).
+    split; [ pose (Hcomm := cnmph_comm mph (F1 2 1 1))
+           | pose (Hcomm := cnmph_comm mph (FS 2 1 1 (F1 1 0 1))) ];
+      symmetry; exact Hcomm.
+  Qed.
+
+  Definition prod_mph {a b c : object C} (f : morphism C c a) (g : morphism C c b) :
+    forall(cn : Cone (ProductGr a b)), forall(m : morphism C c (cn_top cn)),
+      cn_side cn (F1 2 1 1) o m = f ->
+      cn_side cn (FS 2 1 1 (F1 1 0 1)) o m = g ->
+      ConeMorphism (prod_cone f g) cn.
+  Proof.
+    intros cn m H1 H2. srapply mkCnMph; [ exact m | idtac ].
+    intro n; destruct (fin_destr _ n) as [ Hn | [ n' Hn ] ]; rewrite Hn.
+    - rewrite H1. reflexivity.
+    - destruct (fin_destr _ n') as [ Hn' | [ n'' _ ] ].
+      + rewrite Hn'. rewrite H2. reflexivity.
+      + inv_fin_0.
+  Defined.
+  Lemma product_uniq {a b : object C} (P : Product a b):
+    forall(c : object C), forall(m1 m2 : morphism C c (prod_obj P)),
+      pi1 P o m1 = pi1 P o m2 -> pi2 P o m1 = pi2 P o m2 -> m1 = m2.
+  Proof.
+    intros c m1 m2 Hpi1 Hpi2.
+    pose (mph1 := prod_mph (pi1 P o m1) (pi2 P o m1) (lim_cone P) m1 1 1).
+    pose (mph2 := prod_mph (pi1 P o m1) (pi2 P o m1) (lim_cone P) m2 Hpi1^ Hpi2^).
+    exact (lim_uniq P _ mph1 mph2).
+  Qed.
+
+End GraphProduct.
+
+Section GraphExtension.
+  Context {C : PreCategory}.
+
+  Definition ExtendVertices {size : nat} (G : Graph C size 0) (x : object C) : Graph C (S size) 0.
+  Proof.
+    srapply mkGraph.
+    - intro n. destruct n; [ exact x | idtac ].
+      apply (gr_vertex G). apply Nat.path_nat_S in p. rewrite p. exact n.
+    - inv_fin_0'.
+  Defined.
+
+  Definition RestrictConeVert (size : nat) (G : Graph C size 0) (x : object C):
+    forall(cn : Cone (ExtendVertices G x)), Cone G.
+  Proof.
+    intro cn. srapply mkCone.
+    - exact (cn_top cn).
+    - intro n. exact (cn_side cn (FS _ size 1 n)).
+    - inv_fin_0'.
+  Defined.
+  Definition ExtendConeVert (size : nat) (G : Graph C size 0) (x : object C):
+    forall(cn : Cone G), forall(P : Product x (cn_top cn)),
+      Cone (ExtendVertices G x).
+  Proof.
+    intros cn P. srapply mkCone.
+    - exact (prod_obj P).
+    - destruct n; [ exact (pi1 P) | idtac ].
+      unfold ExtendVertices; simpl. apply (fun m => m o pi2 P). apply (cn_side cn).
+    - inv_fin_0'.
+  Defined.
+  Definition RestrictConeVertMorphism (size : nat) (G : Graph C size 0) (x : object C):
+    forall(c1 : Cone (ExtendVertices G x)), forall(c2 : Cone G),
+    forall(P : Product x (cn_top c2)),
+      ConeMorphism c1 (ExtendConeVert size G x c2 P) ->
+      ConeMorphism (RestrictConeVert size G x c1) c2.
+  Proof.
+    intros c1 c2 P mph. srapply mkCnMph.
+    - exact (pi2 P o cnmph_mph mph).
+    - intro n. unfold RestrictConeVert; simpl. rewrite <- associativity.
+      exact (cnmph_comm mph (FS _ size 1 n)).
+  Defined.
+  Lemma ExtendLimitVert (size : nat) (G : Graph C size 0) (x : object C):
+    forall(L : Limit G), forall(P : Product x (cn_top (lim_cone L))),
+      Limit (ExtendVertices G x).
+  Proof.
+    intros L P. srapply mkLim.
+    - exact (ExtendConeVert size G x (lim_cone L) P).
+    - intro c. pose (c' := RestrictConeVert size G x c). pose (mph := lim_ex L c').
+      destruct (product_ex P (cn_top c) (cn_side c (F1 _ size 1)) (cnmph_mph mph))
+               as [ m [ Hm1 Hm2 ] ].
+      srapply mkCnMph; [ exact m
+                       | intro v;
+                         destruct (fin_destr _ v) as [ Hv | [ v' Hv ] ];
+                         rewrite Hv;
+                         unfold ExtendConeVert; simpl;
+                         [ symmetry; exact Hm1 | idtac ] ].
+      rewrite associativity. rewrite <- Hm2. exact (cnmph_comm mph v').
+    - intros c m1 m2. apply (product_uniq P).
+      + rewrite (cnmph_comm m1 (F1 _ size 1)). rewrite (cnmph_comm m2 (F1 _ size 1)). reflexivity.
+      + pose (m1' := RestrictConeVertMorphism size G x c (lim_cone L) P m1).
+        pose (m2' := RestrictConeVertMorphism size G x c (lim_cone L) P m2).
+        exact (lim_uniq L _ m1' m2').
+  Qed.
+
+End GraphExtension.
+

@@ -57,10 +57,18 @@ Section FinTypes.
     intro f. destruct f; inversion p.
   Qed.
 
+End FinTypes.
+
+Ltac inv_fin_0 :=
+  apply Empty_ind; apply fin_0; assumption.
+Ltac inv_fin_0' :=
+  intro; inv_fin_0.
+
+Section FinTypes.
+
   Lemma fin_1 (f : Fin 1) : f = F1 1 0 1.
   Proof.
-    destruct (fin_destr _ f) as [ p | [ f' _ ]]; [ exact p | idtac ].
-    apply Empty_ind. apply fin_0. exact f'.
+    destruct (fin_destr _ f) as [ p | [ f' _ ]]; [ exact p | inv_fin_0 ].
   Qed.
 
   Lemma fin_1_contr : Contr (Fin 1).
@@ -122,3 +130,4 @@ Section FinTypes.
     (* - intro f. unfold unpack_add. destruct n; simpl. induction f. *)
 
 End FinTypes.
+
