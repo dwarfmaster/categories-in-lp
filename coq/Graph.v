@@ -483,6 +483,16 @@ Section GraphDestruction.
     - apply (cn_side cn (inl f)).
     - apply (cn_side cn (inr tt)).
   Defined.
+  Definition RestrictExtendVertexMorphism {size : nat} (G : Graph C (S size) 0) :
+    forall(c1 : Cone G), forall(c2 : Cone (ExtendVertices (RestrictVertex G) (fobj G))),
+      ConeMorphism c1 (ConeRestrictExtendVertex G c2) ->
+      ConeMorphism (RestrictExtendVertexCone G c1) c2.
+  Proof.
+    intros c1 c2 mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
+    intro n. destruct n; [ idtac | destruct u ]; simpl.
+    - apply (cnmph_comm mph (inl f)).
+    - apply (cnmph_comm mph (inr tt)).
+  Defined.
 
   Lemma RestrictExtendLimitVert {size : nat} (G : Graph C (S size) 0) :
     Limit (ExtendVertices (RestrictVertex G) (fobj G)) -> Limit G.
@@ -491,8 +501,14 @@ Section GraphDestruction.
     - exact (ConeRestrictExtendVertex G (lim_cone L)).
     - intro c. pose (c' := RestrictExtendVertexCone G c). pose (mph := lim_ex L c').
       srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
-      intro n. simpl.
-  Admitted.
+      intro n. destruct n; [ idtac | destruct u ]; simpl.
+      + apply (cnmph_comm mph (inl f)).
+      + apply (cnmph_comm mph (inr tt)).
+    - intros c m1 m2.
+      pose (m1' := RestrictExtendVertexMorphism G _ _ m1).
+      pose (m2' := RestrictExtendVertexMorphism G _ _ m2).
+      exact (lim_uniq L _ m1' m2').
+  Qed.
 
 End GraphDestruction.
 
@@ -542,8 +558,10 @@ Theorem GraphLimitFromProductAndEqualizers (C : PreCategory)
 Proof.
   intros size arrows G. induction arrows; [ induction size | idtac ].
   - apply EmptyGraphLimit. exact T.
-  - admit.
+  - apply RestrictExtendLimitVert.
+    apply (ExtendLimitVert size (RestrictVertex G) (fobj G) (IHsize (RestrictVertex G))).
+    apply P.
   - apply LimitExtendRestrict.
     apply (ExtendLimit size arrows (RestrictArrow G) (IHarrows (RestrictArrow G))).
     apply E.
-Admitted.
+Qed.
