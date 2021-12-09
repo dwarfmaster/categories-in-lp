@@ -1,9 +1,17 @@
 
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
-Require Import Finite.
+From HoTT Require Import Spaces.Finite.
 
 Local Open Scope morphism_scope.
+
+Definition fin1 : Fin 2 := inr tt.
+Definition fin2 : Fin 2 := inl (inr tt).
+
+Ltac empty_ind :=
+  apply Empty_ind; assumption.
+Ltac empty_ind' :=
+  intro; empty_ind.
 
 Record Graph {C : PreCategory} {size arrows : nat} :=
   mkGraph
@@ -52,10 +60,10 @@ Section GraphEqualizer.
   Definition EqualizerGr {a b : object C} (f g : morphism C a b) : Graph C 2 2.
   Proof.
     srapply mkGraph.
-    - intro x. destruct x; [ exact a | exact b ].
+    - intro x. destruct x; [ exact b | exact a ].
     - intro x. destruct x.
-      + exists (F1 2 1 1). exists (FS 2 1 1 (F1 1 0 1)). exact f.
-      + exists (F1 2 1 1). exists (FS 2 1 1 (F1 1 0 1)). exact g.
+      + exists fin1. exists fin2. exact f.
+      + exists fin1. exists fin2. exact g.
   Defined.
   Definition Equalizer {a b : object C} (f g : morphism C a b) := Limit (EqualizerGr f g).
   Definition AllEqualizers := forall(a b : object C), forall(f g : morphism C a b), Equalizer f g.
@@ -63,16 +71,16 @@ Section GraphEqualizer.
     cn_top (lim_cone E).
   Definition eq_mph {a b : object C} (f g : morphism C a b) (E : Equalizer f g)
     : morphism C (eq_obj f g E) a :=
-    cn_side (lim_cone E) (F1 2 1 1).
+    cn_side (lim_cone E) fin1.
   Lemma eq_mph_comm {a b : object C} (f g : morphism C a b) (E : Equalizer f g) :
     f o eq_mph f g E = g o eq_mph f g E.
   Proof.
     unfold eq_mph. destruct E. simpl.
-    pose (Hcomm := cn_comm (lim_cone0) (F1 2 1 1)); unfold EqualizerGr in Hcomm;
+    pose (Hcomm := cn_comm (lim_cone0) fin1); unfold EqualizerGr in Hcomm;
       unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
       simpl in Hcomm.
     rewrite Hcomm; clear Hcomm.
-    pose (Hcomm := cn_comm (lim_cone0) (FS 2 1 1 (F1 1 0 1))); unfold EqualizerGr in Hcomm;
+    pose (Hcomm := cn_comm (lim_cone0) fin2); unfold EqualizerGr in Hcomm;
       unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
       simpl in Hcomm.
     rewrite Hcomm; clear Hcomm.
@@ -84,7 +92,7 @@ Section GraphEqualizer.
   Proof.
     intro Hcomm. srapply mkCone.
     - exact c.
-    - unfold EqualizerGr. simpl. intro n. destruct n; [ exact h | exact (f o h) ].
+    - unfold EqualizerGr. simpl. intro n. destruct n; [ exact (f o h) | exact h ].
     - unfold EqualizerGr; unfold gr_edge; unfold gr_src; unfold gr_dst; simpl.
       intro n. destruct n; simpl; [ reflexivity | symmetry; exact Hcomm ].
   Defined.
@@ -94,7 +102,7 @@ Section GraphEqualizer.
   Proof.
     intros c h Hcomm. destruct E. unfold eq_mph. simpl.
     pose (cn := eq_cone f g h Hcomm). pose (mph := lim_ex0 cn).
-    exists(cnmph_mph mph). rewrite (cnmph_comm mph (F1 2 1 1)).
+    exists(cnmph_mph mph). rewrite (cnmph_comm mph fin1).
     unfold cn; unfold eq_cone; simpl. reflexivity.
   Qed.
 
@@ -104,15 +112,13 @@ Section GraphEqualizer.
     : h1 = eq_mph f g E o m -> ConeMorphism (eq_cone f g h1 H1) (lim_cone E).
   Proof.
     intro Hcomm. srapply mkCnMph; [ exact m | idtac ].
-    unfold EqualizerGr; intro n; destruct (fin_destr _ n) as [ Hn | [ n' Hn ] ]; rewrite Hn;
-      unfold eq_cone; simpl; simpl in *.
-    - rewrite Hcomm. unfold eq_mph. reflexivity.
+    unfold EqualizerGr; intro n; destruct n; unfold eq_cone; simpl; simpl in *.
     - rewrite Hcomm. clear Hcomm. rewrite <- associativity. f_ap. unfold eq_mph; simpl.
-      pose (Hcomm := cn_comm (lim_cone E) (F1 2 1 1));
+      pose (Hcomm := cn_comm (lim_cone E) fin2);
         unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
-        simpl in Hcomm. rewrite Hcomm.
-      destruct (fin_destr _ n') as [ Hn' | [ n'' Hn' ] ]; rewrite Hn';
-        [ reflexivity | inv_fin_0 ].
+        simpl in Hcomm. rewrite Hcomm. clear Hcomm.
+      destruct f0; [ apply Empty_ind; assumption | destruct u; reflexivity ].
+    - rewrite Hcomm. unfold eq_mph. destruct u. reflexivity.
   Defined.
   Lemma eq_uniq {a b c : object C} (f g : morphism C a b) (h : morphism C c a) (E : Equalizer f g) :
     forall(m1 m2 : morphism C c (eq_obj f g E)),
@@ -141,8 +147,8 @@ Section GraphExtension.
     srapply mkGraph.
     - exact (gr_vertex G).
     - intro a. destruct a.
+      + apply gr_edges. exact f0.
       + exact {| proj1 := src; proj2 := {| proj1 := dst; proj2 := f |} |}.
-      + apply gr_edges. apply Nat.path_nat_S in p. rewrite p. exact a.
   Defined.
   Definition ExtendCone {size arrows : nat} {G : Graph C size arrows} (src dst : Fin size)
     (f : morphism C (gr_vertex G src) (gr_vertex G dst))
@@ -151,7 +157,7 @@ Section GraphExtension.
     srapply mkCone.
     - exact (cn_top c).
     - exact (cn_side c).
-    - intro a. pose (na := FS _ _ 1 a).
+    - intro a. pose (na := @inl _ Unit a).
       pose (Hcomm := cn_comm c na); unfold ExtendArrow in Hcomm;
         unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
         simpl in Hcomm.
@@ -176,16 +182,10 @@ Section GraphExtension.
       destruct arrow; unfold ExtendArrow;
         unfold gr_src; unfold gr_dst; unfold gr_edge;
         simpl;
-        (* On the first case, the new arrows commutes from the property of the equalizer *)
-        (* On the second case, we remove tau because it commutes without it *)
-        [ apply eq_mph_comm | f_ap; clear tau ].
-      pose (inj_arrow := internal_paths_rew_r nat arrows m
-             (fun n : nat => Fin n) arrow (Nat.path_nat_S arrows m p)).
-      assert (inj_arrow = internal_paths_rew_r nat arrows m
-                            (fun n : nat => Fin n) arrow (Nat.path_nat_S arrows m p))
-             as Heq by reflexivity.
-      rewrite <- Heq. clear Heq.
-      pose (Hcomm := cn_comm lim_cone0 inj_arrow);
+        (* On the first case, we remove tau because it commutes without it *)
+        (* On the second case, the new arrows commutes from the property of the equalizer *)
+        [ f_ap; clear tau | apply eq_mph_comm ].
+      pose (Hcomm := cn_comm lim_cone0 f0);
         unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
         simpl in Hcomm.
       exact Hcomm.
@@ -224,7 +224,7 @@ Section GraphExtension.
         (* We show that it is the case since it comes from a cone on the extended graph *)
         rewrite associativity. rewrite (cnmph_comm mph src). rewrite (cnmph_comm mph dst).
         unfold ExtendCone; simpl.
-        apply (cn_comm c (F1 _ arrows 1)). }
+        apply (cn_comm c (inr tt)). }
       srapply mkCnMph; simpl; [ exact (mphE.1) | intro n ].
       unfold tau. rewrite associativity. rewrite <- mphE.2.
       apply (cnmph_comm mph n).
@@ -232,11 +232,11 @@ Section GraphExtension.
     - intros c m1 m2. apply (eq_uniq _ _ (tau o cnmph_mph m1) E); try reflexivity.
       + rewrite <- associativity. rewrite <- associativity. f_ap.
         unfold tau. unfold eq_mph.
-        pose (Hcomm := cn_comm (lim_cone E) (F1 2 1 1));
+        pose (Hcomm := cn_comm (lim_cone E) fin1);
           unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
           simpl in Hcomm.
         rewrite Hcomm. clear Hcomm.
-        pose (Hcomm := cn_comm (lim_cone E) (FS 2 1 1 (F1 1 0 1)));
+        pose (Hcomm := cn_comm (lim_cone E) fin2);
           unfold gr_edge in Hcomm; unfold gr_src in Hcomm; unfold gr_dst in Hcomm;
           simpl in Hcomm.
         rewrite Hcomm. clear Hcomm.
@@ -255,7 +255,7 @@ Section GraphDestruction.
 
   Definition RestrictArrow {size arrows : nat} (G : Graph C size (S arrows)) : Graph C size arrows
     := {| gr_vertex := gr_vertex G
-       ;  gr_edges := fun a => gr_edges G (FS _ arrows 1 a)
+       ;  gr_edges := fun a => gr_edges G (inl a)
        |}.
   Definition RestrictCone {size arrows : nat} {G : Graph C size (S arrows)} (c : Cone G) :
     Cone (RestrictArrow G).
@@ -266,7 +266,7 @@ Section GraphDestruction.
     - intro a. apply (cn_comm c).
   Defined.
   Definition farr {size arrows : nat} (G : Graph C size (S arrows)) : Fin (S arrows) :=
-    F1 _ arrows 1.
+    inr tt.
 
   Ltac graph_simpl H :=
     unfold ExtendArrow in H; unfold RestrictArrow in H; unfold farr in H;
@@ -288,9 +288,7 @@ Section GraphDestruction.
     - exact (cn_top cn).
     - exact (cn_side cn).
     - intro a. pose (Hcomm := cn_comm cn a); graph_simpl Hcomm.
-      destruct (fin_destr _ a) as [ Ha | [ a' Ha ] ];
-        rewrite Ha in Hcomm; simpl in Hcomm;
-        graph_simpl_goal; rewrite Ha; exact Hcomm.
+      destruct a; try (destruct u); exact Hcomm.
   Defined.
   Definition ConeRestrictExtend {size arrows : nat} (G : Graph C size (S arrows)) :
     forall(cn : Cone G),
@@ -303,9 +301,7 @@ Section GraphDestruction.
     - exact (cn_top cn).
     - exact (cn_side cn).
     - intro a. pose (Hcomm := cn_comm cn a); graph_simpl Hcomm.
-      destruct (fin_destr _ a) as [ Ha | [ a' Ha ] ];
-        rewrite Ha in Hcomm; simpl in Hcomm;
-        graph_simpl_goal; rewrite Ha; exact Hcomm.
+      destruct a; try (destruct u); exact Hcomm.
   Defined.
   Definition ConeExtendRestrictMorphism {size arrows : nat} (G : Graph C size (S arrows)) :
     let G' := ExtendArrow (RestrictArrow G)
@@ -347,47 +343,47 @@ Section GraphProduct.
   Definition ProductGr (a b : object C) : Graph C 2 0.
   Proof.
     srapply mkGraph; intro x.
-    - destruct x; [ exact a | exact b ].
-    - inv_fin_0.
+    - destruct x; [ exact b | exact a ].
+    - empty_ind.
   Defined.
   Definition Product (a b : object C) := Limit (ProductGr a b).
+  Definition AllProducts := forall(a b : object C), Product a b.
   Definition prod_obj {a b : object C} (p : Product a b) : object C :=
     cn_top (lim_cone p).
   Definition pi1 {a b : object C} (p : Product a b) : morphism C (prod_obj p) a :=
-    cn_side (lim_cone p) (F1 2 1 1).
+    cn_side (lim_cone p) fin1.
   Definition pi2 {a b : object C} (p : Product a b) : morphism C (prod_obj p) b :=
-    cn_side (lim_cone p) (FS 2 1 1 (F1 1 0 1)).
+    cn_side (lim_cone p) fin2.
 
   Definition prod_cone {a b c : object C} (f : morphism C c a) (g : morphism C c b) :
     Cone (ProductGr a b).
   Proof.
     srapply mkCone.
     - exact c.
-    - intro n; destruct n; [ exact f | exact g ].
-    - inv_fin_0'.
+    - intro n; destruct n; [ exact g | exact f ].
+    - empty_ind'.
   Defined.
   Lemma product_ex {a b : object C} (P : Product a b) :
     forall(c : object C), forall(f : morphism C c a), forall(g : morphism C c b),
       exists(e : morphism C c (prod_obj P)), f = pi1 P o e /\ g = pi2 P o e.
   Proof.
     intros c f g. pose (cn := prod_cone f g). pose (mph := lim_ex P cn). exists(cnmph_mph mph).
-    split; [ pose (Hcomm := cnmph_comm mph (F1 2 1 1))
-           | pose (Hcomm := cnmph_comm mph (FS 2 1 1 (F1 1 0 1))) ];
+    split; [ pose (Hcomm := cnmph_comm mph fin1)
+           | pose (Hcomm := cnmph_comm mph fin2) ];
       symmetry; exact Hcomm.
   Qed.
 
   Definition prod_mph {a b c : object C} (f : morphism C c a) (g : morphism C c b) :
     forall(cn : Cone (ProductGr a b)), forall(m : morphism C c (cn_top cn)),
-      cn_side cn (F1 2 1 1) o m = f ->
-      cn_side cn (FS 2 1 1 (F1 1 0 1)) o m = g ->
+      cn_side cn fin1 o m = f ->
+      cn_side cn fin2 o m = g ->
       ConeMorphism (prod_cone f g) cn.
   Proof.
     intros cn m H1 H2. srapply mkCnMph; [ exact m | idtac ].
-    intro n; destruct (fin_destr _ n) as [ Hn | [ n' Hn ] ]; rewrite Hn.
+    intro n; destruct n; try (destruct u).
+    - destruct f0; try (destruct u); [ empty_ind | idtac ].
+      rewrite H2. reflexivity.
     - rewrite H1. reflexivity.
-    - destruct (fin_destr _ n') as [ Hn' | [ n'' _ ] ].
-      + rewrite Hn'. rewrite H2. reflexivity.
-      + inv_fin_0.
   Defined.
   Lemma product_uniq {a b : object C} (P : Product a b):
     forall(c : object C), forall(m1 m2 : morphism C c (prod_obj P)),
@@ -406,19 +402,16 @@ Section GraphExtension.
 
   Definition ExtendVertices {size : nat} (G : Graph C size 0) (x : object C) : Graph C (S size) 0.
   Proof.
-    srapply mkGraph.
-    - intro n. destruct n; [ exact x | idtac ].
-      apply (gr_vertex G). apply Nat.path_nat_S in p. rewrite p. exact n.
-    - inv_fin_0'.
+    srapply mkGraph; [ idtac | empty_ind' ].
+    intro n. destruct n; [ idtac | exact x ].
+    apply (gr_vertex G). exact f.
   Defined.
 
   Definition RestrictConeVert (size : nat) (G : Graph C size 0) (x : object C):
     forall(cn : Cone (ExtendVertices G x)), Cone G.
   Proof.
-    intro cn. srapply mkCone.
-    - exact (cn_top cn).
-    - intro n. exact (cn_side cn (FS _ size 1 n)).
-    - inv_fin_0'.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | empty_ind' ].
+    intro n. exact (cn_side cn (inl n)).
   Defined.
   Definition ExtendConeVert (size : nat) (G : Graph C size 0) (x : object C):
     forall(cn : Cone G), forall(P : Product x (cn_top cn)),
@@ -426,9 +419,9 @@ Section GraphExtension.
   Proof.
     intros cn P. srapply mkCone.
     - exact (prod_obj P).
-    - destruct n; [ exact (pi1 P) | idtac ].
+    - destruct n; [ idtac | exact (pi1 P) ].
       unfold ExtendVertices; simpl. apply (fun m => m o pi2 P). apply (cn_side cn).
-    - inv_fin_0'.
+    - empty_ind'.
   Defined.
   Definition RestrictConeVertMorphism (size : nat) (G : Graph C size 0) (x : object C):
     forall(c1 : Cone (ExtendVertices G x)), forall(c2 : Cone G),
@@ -439,7 +432,7 @@ Section GraphExtension.
     intros c1 c2 P mph. srapply mkCnMph.
     - exact (pi2 P o cnmph_mph mph).
     - intro n. unfold RestrictConeVert; simpl. rewrite <- associativity.
-      exact (cnmph_comm mph (FS _ size 1 n)).
+      exact (cnmph_comm mph (inl n)).
   Defined.
   Lemma ExtendLimitVert (size : nat) (G : Graph C size 0) (x : object C):
     forall(L : Limit G), forall(P : Product x (cn_top (lim_cone L))),
@@ -448,17 +441,16 @@ Section GraphExtension.
     intros L P. srapply mkLim.
     - exact (ExtendConeVert size G x (lim_cone L) P).
     - intro c. pose (c' := RestrictConeVert size G x c). pose (mph := lim_ex L c').
-      destruct (product_ex P (cn_top c) (cn_side c (F1 _ size 1)) (cnmph_mph mph))
+      destruct (product_ex P (cn_top c) (cn_side c (inr tt)) (cnmph_mph mph))
                as [ m [ Hm1 Hm2 ] ].
       srapply mkCnMph; [ exact m
                        | intro v;
-                         destruct (fin_destr _ v) as [ Hv | [ v' Hv ] ];
-                         rewrite Hv;
+                         destruct v;
                          unfold ExtendConeVert; simpl;
-                         [ symmetry; exact Hm1 | idtac ] ].
-      rewrite associativity. rewrite <- Hm2. exact (cnmph_comm mph v').
+                         [ idtac | symmetry; destruct u; exact Hm1 ] ].
+      rewrite associativity. rewrite <- Hm2. exact (cnmph_comm mph f).
     - intros c m1 m2. apply (product_uniq P).
-      + rewrite (cnmph_comm m1 (F1 _ size 1)). rewrite (cnmph_comm m2 (F1 _ size 1)). reflexivity.
+      + rewrite (cnmph_comm m1 (inr tt)). rewrite (cnmph_comm m2 (inr tt)). reflexivity.
       + pose (m1' := RestrictConeVertMorphism size G x c (lim_cone L) P m1).
         pose (m2' := RestrictConeVertMorphism size G x c (lim_cone L) P m2).
         exact (lim_uniq L _ m1' m2').
@@ -466,22 +458,60 @@ Section GraphExtension.
 
 End GraphExtension.
 
+Section GraphDestruction.
+  Context {C : PreCategory}.
+
+  Definition RestrictVertex {size : nat} (G : Graph C (S size) 0) : Graph C size 0.
+  Proof.
+    srapply mkGraph; [ idtac | empty_ind' ]. intro n.
+    apply (gr_vertex G). exact (inl n).
+  Defined.
+  Definition fobj {size : nat} (G : Graph C (S size) 0) : object C :=
+    gr_vertex G (inr tt).
+  Definition RestrictExtendVertexCone {size : nat} (G : Graph C (S size) 0) :
+    Cone G -> Cone (ExtendVertices (RestrictVertex G) (fobj G)).
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | intro n | empty_ind' ].
+    destruct n; apply (cn_side cn).
+  Defined.
+
+  Definition ConeRestrictExtendVertex {size : nat} (G : Graph C (S size) 0) :
+    Cone (ExtendVertices (RestrictVertex G) (fobj G)) -> Cone G.
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | empty_ind' ].
+    intro n. destruct n; [ idtac | destruct u ].
+    - apply (cn_side cn (inl f)).
+    - apply (cn_side cn (inr tt)).
+  Defined.
+
+  Lemma RestrictExtendLimitVert {size : nat} (G : Graph C (S size) 0) :
+    Limit (ExtendVertices (RestrictVertex G) (fobj G)) -> Limit G.
+  Proof.
+    intro L. srapply mkLim.
+    - exact (ConeRestrictExtendVertex G (lim_cone L)).
+    - intro c. pose (c' := RestrictExtendVertexCone G c). pose (mph := lim_ex L c').
+      srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
+      intro n. simpl.
+  Admitted.
+
+End GraphDestruction.
+
 Section GraphTerminal.
   Context {C : PreCategory}.
 
   Definition TerminalGr : Graph C 0 0.
-  Proof. srapply mkGraph; inv_fin_0'. Defined.
+  Proof. srapply mkGraph; empty_ind'. Defined.
   Definition Terminal := Limit TerminalGr.
   Definition term_obj (T : Terminal) := cn_top (lim_cone T).
 
   Definition term_cone (c : object C) : Cone TerminalGr.
-  Proof. srapply mkCone; [ exact c | inv_fin_0' | inv_fin_0' ]. Defined.
+  Proof. srapply mkCone; [ exact c | empty_ind' | empty_ind' ]. Defined.
   Lemma terminal_ex (c : object C) (T : Terminal) : morphism C c (term_obj T).
   Proof. exact (cnmph_mph (lim_ex T (term_cone c))). Qed.
 
   Definition term_mph {c1 : object C} (c2 : Cone TerminalGr) (f : morphism C c1 (cn_top c2)) :
     ConeMorphism (term_cone c1) c2.
-  Proof. srapply mkCnMph; [ exact f | inv_fin_0' ]. Defined.
+  Proof. srapply mkCnMph; [ exact f | empty_ind' ]. Defined.
   Lemma terminal_uniq (c : object C) (T : Terminal) :
     forall(f g : morphism C c (term_obj T)), f = g.
   Proof.
@@ -490,3 +520,30 @@ Section GraphTerminal.
   Qed.
 
 End GraphTerminal.
+
+Section GraphExtension.
+  Context {C : PreCategory}.
+
+  Lemma EmptyGraphLimit (G : Graph C 0 0):
+    @Terminal C -> Limit G.
+  Proof.
+    intro T. srapply mkLim.
+    - srapply mkCone; [ exact (term_obj T) | empty_ind' | empty_ind' ].
+    - intro c. pose (mph := terminal_ex (cn_top c) T).
+      srapply mkCnMph; [ exact mph | empty_ind' ].
+    - intros c m1 m2. apply terminal_uniq.
+  Qed.
+
+End GraphExtension.
+
+Theorem GraphLimitFromProductAndEqualizers (C : PreCategory)
+        (T : @Terminal C) (P : @AllProducts C) (E : @AllEqualizers C) :
+  forall(size arrows : nat), forall(G : Graph C size arrows), Limit G.
+Proof.
+  intros size arrows G. induction arrows; [ induction size | idtac ].
+  - apply EmptyGraphLimit. exact T.
+  - admit.
+  - apply LimitExtendRestrict.
+    apply (ExtendLimit size arrows (RestrictArrow G) (IHarrows (RestrictArrow G))).
+    apply E.
+Admitted.
