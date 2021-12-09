@@ -23,12 +23,18 @@ with πf2 (mkPf _ $f) ↪ $f
 with mkPf (πf1 $f) (πf2 $f) ↪ $f;
 
 // Identity
-rule @Id (PCat' $C $D) $a ↪ mkPf (@Id $C (π1 $a)) (@Id $D (π2 $a));
+rule mkPf (@Id $C $a) (@Id $D $b) ↪ @Id (PCat' $C $D) (mkP $a $b)
+with πf1 (@Id (PCat' $C _) $a) ↪ @Id $C (π1 $a)
+with πf2 (@Id (PCat' _ $D) $a) ↪ @Id $D (π2 $a);
 
 // Composition
 // This should be the natural rule but it won't work:
 //   @Comp (PCat' $C $D) _ _ _ (mkPf $f1 $f2) (mkPf $g1 $g2) ↪ mkPf (@Comp $C _ _ _ $f1 $g1) (@Comp $D _ _ _ $f2 $g2);
-rule @Comp (PCat' _ _) _ _ _ $f $g ↪ mkPf (Comp (πf1 $f) (πf1 $g)) (Comp (πf2 $f) (πf2 $g));
+rule mkPf (@Comp $C $a1 $b1 $c1 $f1 $g1) (@Comp $D $a2 $b2 $c2 $f2 $g2)
+   ↪ @Comp (PCat' $C $D) (mkP $a1 $a2) (mkP $b1 $b2) (mkP $c1 $c2) (mkPf $f1 $g1) (mkPf $f2 $g2)
+with πf1 (@Comp (PCat' _ _) _ _ _ $f $g) ↪ Comp (πf1 $f) (πf1 $g)
+with πf2 (@Comp (PCat' _ _) _ _ _ $f $g) ↪ Comp (πf2 $f) (πf2 $g);
+//rule @Comp (PCat' _ _) _ _ _ $f $g ↪ mkPf (Comp (πf1 $f) (πf1 $g)) (Comp (πf2 $f) (πf2 $g));
 assert (C D : Cat) (a b : PCat C D) (f : PHom a b) ⊢ f ∘ Id a ≡ f;
 assert (C D : Cat) (a b : PCat C D) (f : PHom a b) ⊢ Id b ∘ f ≡ f;
 assert (C D : Cat) (a b c d : PCat C D) (f : PHom c d) (g : PHom b c) (h : PHom a b) ⊢ (f ∘ g) ∘ h ≡ f ∘ (g ∘ h);

@@ -5,7 +5,7 @@ require open Cats.Cat;
 // The functor category
 constant symbol Funct' : Cat → Cat → Cat;
 symbol Funct (C D : Cat) : TYPE ≔ Ob (Funct' C D);
-symbol Fob {C D : Cat} : Funct C D → Ob C → Ob D;
+constant symbol Fob {C D : Cat} : Funct C D → Ob C → Ob D;
 symbol Fmph {C D : Cat} (F : Funct C D) {a b : Ob C} : Mph a b → Mph (Fob F a) (Fob F b);
 rule Fmph $F (Id $a) ↪ Id (Fob $F $a)
 with Fmph $F (Comp $f $g) ↪ Comp (Fmph $F $f) (Fmph $F $g);
@@ -19,7 +19,7 @@ with mkNat $F $G (λ x, @NatF _ _ $F[] $G[] $τ[] x) ↪ $τ;
 // Natural identity
 symbol NatId {C D : Cat} (F : Funct C D) : Mph F F ≔ mkNat F F (λ x, Id (Fob F x));
 assert C D (a b : Ob C) (F : Funct C D) (f : @Mph C a b) ⊢ Comp (NatF (NatId F) b) (Fmph F f) ≡ Comp (Fmph F f) (NatF (NatId F) a);
-rule @Id (Funct' $C $D) $F ↪ @NatId $C $D $F;
+rule NatF (@Id (Funct' _ $D) $F) $x ↪ @Id $D (Fob $F $x);
 
 // Natural composition
 symbol NatC {C D : Cat} {F G H : Funct C D} : Mph G H → Mph F G → Mph F H;
