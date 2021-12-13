@@ -7,6 +7,7 @@ Require Import Limits.Graph.
 Require Import Limits.Equalizer.
 Require Import Limits.Product.
 Require Import Limits.Terminal.
+Require Import Limits.Fibered.
 
 Local Open Scope morphism_scope.
 
@@ -325,7 +326,7 @@ Proof.
 Qed.
 
 Theorem AllProductsFromProduct (C : PreCategory)
-        (T : @Terminal C) (P : @AllProducts C) :
+        (T : Terminal C) (P : @AllProducts C) :
   forall(size : nat), forall(G : Graph C (Fin size) Empty), Limit G.
 Proof.
   intros size G. induction size.
@@ -336,7 +337,7 @@ Proof.
 Qed.
 
 Theorem AllLimitsFromProductAndEqualizer (C : PreCategory)
-        (T : @Terminal C) (P : @AllProducts C) (E : @AllEqualizers C) :
+        (T : Terminal C) (P : @AllProducts C) (E : @AllEqualizers C) :
   HasFiniteLimits C.
 Proof.
   intros size arrows G. induction arrows; [ apply AllProductsFromProduct; assumption | idtac ].
@@ -345,3 +346,13 @@ Proof.
   apply E.
 Qed.
 
+Theorem AllLimitsFromFiberedAndTerminal (C : PreCategory)
+        (T : Terminal C) (F : AllFibered C) :
+  HasFiniteLimits C.
+Proof.
+  apply AllLimitsFromProductAndEqualizer.
+  - exact T.
+  - intros a b. apply (ProductFromFiberedProduct T a b). apply F.
+  - intros a b f g. simple refine (EqualizerFromFiberedProduct f g _ _); [ idtac | apply F ].
+    apply (ProductFromFiberedProduct T b b). apply F.
+Qed.
