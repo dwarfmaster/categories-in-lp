@@ -15,20 +15,6 @@ Local Open Scope morphism_scope.
 Definition IsCartesian (C : PreCategory) :=
   @Terminal C * forall(a b : object C), Product a b.
 
-Fixpoint Vect (A : Type) (n : nat) : Type :=
-  match n with
-  | O => Unit
-  | S n => Vect A n * A
-  end.
-Fixpoint get {A : Type} (n : nat) : Vect A n -> Fin n -> A :=
-  match n with
-  | O => fun _ (i : Fin 0) => Empty_ind (fun _ => A) i
-  | S n => fun (v : Vect A (S n)) (i : Fin (S n)) =>
-            match i with
-            | inl i => let (v,_) := v in get n v i
-            | inr tt => let (_,a) := v in a
-            end
-  end.
 Arguments get {A n} v i.
 Definition UnbiasedProductGr {C : PreCategory} {n : nat} :
   Vect (object C) n -> Graph C (Fin n) Empty
