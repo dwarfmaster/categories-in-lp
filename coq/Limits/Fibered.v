@@ -5,6 +5,7 @@ From HoTT Require Import Spaces.Finite.
 Require Import Misc.
 Require Import Limits.Graph.
 Require Import Limits.Product.
+Require Import Limits.Terminal.
 Require Import Limits.Equalizer.
 
 Local Open Scope morphism_scope.
@@ -108,3 +109,95 @@ Arguments FiberedProduct {C a b c} f g.
 
 Definition AllFibered (C : PreCategory) :=
   forall(a b c : object C), forall(f : morphism C a c), forall(g : morphism C b c), FiberedProduct f g.
+
+Section FiberedEqualizer.
+  Context {C : PreCategory}.
+  Context {a b : object C}.
+  Context (f g : morphism C a b).
+  Context (P : Product b b).
+  Let d : morphism C b (prod_obj P) :=
+        proj1 (product_ex P b (identity b) (identity b)).
+  Let pack : morphism C a (prod_obj P) := proj1 (product_ex P a f g).
+  Let FPEqGr := FiberedProductGr pack d.
+
+  Ltac destruct2 n :=
+    destruct n as [ [ n | [ ] ] | [ ] ];
+    [ empty_ind | idtac | idtac ]; simpl.
+  Ltac destruct3 n :=
+    destruct n as [ [ [ n | [ ] ] | [ ] ] | [ ] ];
+    [ empty_ind | idtac | idtac | idtac ]; simpl.
+  Let f1 : Fin 3 := inr tt.
+  Let f2 : Fin 3 := inl (inr tt).
+  Let f3 : Fin 3 := inl (inl (inr tt)).
+
+  Definition FiberedConeFromEqualizer : Cone (EqualizerGr f g) -> Cone FPEqGr.
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
+    - intro n. destruct3 n; [ idtac | exact (cn_side cn fin2) | exact (cn_side cn fin1) ].
+      apply (product_ex P _ (cn_side cn fin2) (cn_side cn fin2)).
+    - intro n. destruct2 n; unfold gr_edge; simpl.
+      + destruct (product_ex P _ (cn_side cn fin2) (cn_side cn fin2)) as [ dup [ Hpi1 Hpi2 ] ].
+        unfold pack. destruct (product_ex P _ f g) as [ pk [ Hpk1 Hpk2 ] ].
+        apply (product_uniq P); rewrite <- associativity; simpl;
+          [ rewrite <- Hpi1; rewrite <- Hpk1
+          | rewrite <- Hpi2; rewrite <- Hpk2 ].
+        * apply (cn_comm cn fin2).
+        * apply (cn_comm cn fin1).
+      + destruct (product_ex P _ (cn_side cn fin2) (cn_side cn fin2)) as [ dup [ Hpi1 Hpi2 ] ].
+        unfold d. destruct (product_ex P _ (identity b) (identity b)) as [ id [ Hid1 Hid2 ] ].
+        apply (product_uniq P); rewrite <- associativity; simpl.
+        * rewrite <- Hpi1. rewrite <- Hid1. apply left_identity.
+        * rewrite <- Hpi2. rewrite <- Hid2. apply left_identity.
+  Defined.
+  Definition EqualizerConeFromFiberedProduct : Cone FPEqGr -> Cone (EqualizerGr f g).
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
+    - intro n. destruct2 n; [ exact (cn_side cn f2) | exact (cn_side cn f1) ].
+    - pose (Hcomm := (cn_comm cn fin1) @ (cn_comm cn fin2)^); unfold gr_edge in Hcomm;
+        unfold gr_src in Hcomm; unfold gr_dst in Hcomm; simpl in Hcomm.
+      unfold d. destruct (product_ex P _ (identity b) (identity b)) as [ id [ Hid1 Hid2 ] ].
+        unfold pack. destruct (product_ex P _ f g) as [ pk [ Hpk1 Hpk2 ] ].
+      intro n; destruct2 n; unfold gr_edge; simpl;
+        rewrite <- (left_identity C _ _ (cn_side cn f2));
+        [ rewrite Hpk1; rewrite Hid1
+        | rewrite Hpk2; rewrite Hid2 ];
+        rewrite associativity; rewrite associativity;
+        f_ap; symmetry; exact Hcomm.
+  Defined.
+  Definition FiberedCnMphFromEqualizer (c1 : Cone (EqualizerGr f g)) (c2 : Cone FPEqGr) :
+    ConeMorphism (FiberedConeFromEqualizer c1) c2 ->
+    ConeMorphism c1 (EqualizerConeFromFiberedProduct c2).
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
+    intro n; destruct2 n.
+    - apply (cnmph_comm mph f2).
+    - apply (cnmph_comm mph f1).
+  Defined.
+  Definition EqualizerCnMphFromFibered (c1 : Cone (EqualizerGr f g)) (c2 : Cone FPEqGr) :
+    ConeMorphism c1 (EqualizerConeFromFiberedProduct c2) ->
+    ConeMorphism (FiberedConeFromEqualizer c1) c2.
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
+    intro n; destruct3 n; [ idtac | apply (cnmph_comm mph fin2) | apply (cnmph_comm mph fin1) ].
+    destruct (product_ex P _ (cn_side c1 fin2) (cn_side c1 fin2)) as [ dup [ Hpi1 Hpi2 ] ].
+    destruct (product_ex P _ f g).2 as [ Hpk1 Hpk2 ].
+    apply (product_uniq P); simpl;
+      [ rewrite <- Hpi1 | rewrite <- Hpi2 ];
+      rewrite <- associativity; rewrite <- (cn_comm c2 fin2); rewrite <- associativity;
+      [ rewrite <- Hpk1 | rewrite <- Hpk2 ]; rewrite associativity;
+      unfold gr_src; simpl; rewrite (cnmph_comm mph fin1).
+    - apply (cn_comm c1 fin2).
+    - apply (cn_comm c1 fin1).
+  Defined.
+  Theorem EqualizerFromFiberedProduct : FiberedProduct pack d -> Equalizer f g.
+  Proof.
+    intro E. srapply mkLim.
+    - exact (EqualizerConeFromFiberedProduct (lim_cone E)).
+    - intro c. apply FiberedCnMphFromEqualizer. apply (lim_ex E).
+    - intros c m1 m2.
+      pose (mph1 := EqualizerCnMphFromFibered _ _ m1).
+      pose (mph2 := EqualizerCnMphFromFibered _ _ m2).
+      apply (lim_uniq E _ mph1 mph2).
+  Qed.
+
+End FiberedEqualizer.
