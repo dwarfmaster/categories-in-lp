@@ -556,18 +556,25 @@ Section GraphExtension.
 
 End GraphExtension.
 
-Theorem GraphLimitFromProductAndEqualizers (C : PreCategory)
-        (T : @Terminal C) (P : @AllProducts C) (E : @AllEqualizers C) :
-  forall(size arrows : nat), forall(G : Graph C (Fin size) (Fin arrows)), Limit G.
+Theorem GraphProductsFromProduct (C : PreCategory)
+        (T : @Terminal C) (P : @AllProducts C) :
+  forall(size : nat), forall(G : Graph C (Fin size) Empty), Limit G.
 Proof.
-  intros size arrows G. induction arrows; [ induction size | idtac ].
+  intros size G. induction size.
   - apply EmptyGraphLimit. exact T.
   - apply RestrictExtendLimitVert.
     apply (ExtendLimitVert (RestrictVertex G) (fobj G) (IHsize (RestrictVertex G))).
     apply P.
-  - apply LimitExtendRestrict.
-    apply (ExtendLimit _ _ (RestrictArrow G) (IHarrows (RestrictArrow G))).
-    apply E.
+Qed.
+
+Theorem GraphLimitFromProductAndEqualizers (C : PreCategory)
+        (T : @Terminal C) (P : @AllProducts C) (E : @AllEqualizers C) :
+  forall(size arrows : nat), forall(G : Graph C (Fin size) (Fin arrows)), Limit G.
+Proof.
+  intros size arrows G. induction arrows; [ apply GraphProductsFromProduct; assumption | idtac ].
+  apply LimitExtendRestrict.
+  apply (ExtendLimit _ _ (RestrictArrow G) (IHarrows (RestrictArrow G))).
+  apply E.
 Qed.
 
 Definition HasFiniteLimits (C : PreCategory) :=
