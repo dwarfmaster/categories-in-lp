@@ -5,12 +5,22 @@ From HoTT Require Import Spaces.Finite.
 
 Definition fin1 : Fin 2 := inr tt.
 Definition fin2 : Fin 2 := inl (inr tt).
+Definition f1 : Fin 3 := inr tt.
+Definition f2 : Fin 3 := inl (inr tt).
+Definition f3 : Fin 3 := inl (inl (inr tt)).
+
 
 Ltac empty_ind :=
   apply Empty_ind; assumption.
 Ltac empty_ind' :=
   intro; empty_ind.
 
+Ltac destruct2 n :=
+  destruct n as [ [ n | [ ] ] | [ ] ];
+  [ empty_ind | idtac | idtac ]; simpl.
+Ltac destruct3 n :=
+  destruct n as [ [ [ n | [ ] ] | [ ] ] | [ ] ];
+  [ empty_ind | idtac | idtac | idtac ]; simpl.
 
 (*     _                                *)
 (*    / \   _ __ _ __ _____      _____  *)

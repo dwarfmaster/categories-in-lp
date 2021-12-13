@@ -120,16 +120,6 @@ Section FiberedEqualizer.
   Let pack : morphism C a (prod_obj P) := proj1 (product_ex P a f g).
   Let FPEqGr := FiberedProductGr pack d.
 
-  Ltac destruct2 n :=
-    destruct n as [ [ n | [ ] ] | [ ] ];
-    [ empty_ind | idtac | idtac ]; simpl.
-  Ltac destruct3 n :=
-    destruct n as [ [ [ n | [ ] ] | [ ] ] | [ ] ];
-    [ empty_ind | idtac | idtac | idtac ]; simpl.
-  Let f1 : Fin 3 := inr tt.
-  Let f2 : Fin 3 := inl (inr tt).
-  Let f3 : Fin 3 := inl (inl (inr tt)).
-
   Definition FiberedConeFromEqualizer : Cone (EqualizerGr f g) -> Cone FPEqGr.
   Proof.
     intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
@@ -201,3 +191,56 @@ Section FiberedEqualizer.
   Qed.
 
 End FiberedEqualizer.
+
+Section FiberedProduct.
+  Context {C : PreCategory}.
+  Context (T : Terminal C).
+  Context (a b : object C).
+  Let _a := terminal_ex a T.
+  Let _b := terminal_ex b T.
+  Let FPProdGr := FiberedProductGr _a _b.
+
+  Definition FiberedConeFromProduct : Cone (ProductGr a b) -> Cone FPProdGr.
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
+    - intro n; destruct3 n; [ apply (terminal_ex _ T)
+                            | apply (cn_side cn fin2)
+                            | apply (cn_side cn fin1) ].
+    - intro n; destruct2 n; apply (terminal_uniq _ T).
+  Defined.
+  Definition ProductConeFromFibered : Cone FPProdGr -> Cone (ProductGr a b).
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | empty_ind' ].
+    intro n; destruct2 n; [ apply (cn_side cn f2) | apply (cn_side cn f1) ].
+  Defined.
+  Definition ProductCnMphFromFibered (c1 : Cone (ProductGr a b)) (c2 : Cone FPProdGr) :
+    ConeMorphism (FiberedConeFromProduct c1) c2 ->
+    ConeMorphism c1 (ProductConeFromFibered c2).
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
+    intro n; destruct2 n.
+    - apply (cnmph_comm mph f2).
+    - apply (cnmph_comm mph f1).
+  Defined.
+  Definition FiberedCnMphFromProduct (c1 : Cone (ProductGr a b)) (c2 : Cone FPProdGr) :
+    ConeMorphism c1 (ProductConeFromFibered c2) ->
+    ConeMorphism (FiberedConeFromProduct c1) c2.
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
+    intro n; destruct3 n.
+    - apply (terminal_uniq _ T).
+    - apply (cnmph_comm mph fin2).
+    - apply (cnmph_comm mph fin1).
+  Defined.
+  Theorem ProductFromFiberedProduct : FiberedProduct _a _b -> Product a b.
+  Proof.
+    intro E. srapply mkLim.
+    - exact (ProductConeFromFibered (lim_cone E)).
+    - intro c. apply ProductCnMphFromFibered. apply (lim_ex E).
+    - intros c m1 m2.
+      pose (mph1 := FiberedCnMphFromProduct _ _ m1).
+      pose (mph2 := FiberedCnMphFromProduct _ _ m2).
+      apply (lim_uniq E _ mph1 mph2).
+  Qed.
+
+End FiberedProduct.
