@@ -3,6 +3,14 @@ From HoTT Require Import Basics.
 From HoTT Require Import Categories.
 From HoTT Require Import Spaces.Finite.
 
+Definition fin1 : Fin 2 := inr tt.
+Definition fin2 : Fin 2 := inl (inr tt).
+
+Ltac empty_ind :=
+  apply Empty_ind; assumption.
+Ltac empty_ind' :=
+  intro; empty_ind.
+
 
 (*     _                                *)
 (*    / \   _ __ _ __ _____      _____  *)
