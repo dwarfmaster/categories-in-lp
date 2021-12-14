@@ -56,3 +56,13 @@ Fixpoint get {A : Type} (n : nat) : Vect A n -> Fin n -> A :=
             | inr tt => let (_,a) := v in a
             end
   end.
+
+(*  _   _ ___ ____   *)
+(* | | | |_ _|  _ \  *)
+(* | | | || || |_) | *)
+(* | |_| || ||  __/  *)
+(*  \___/|___|_|     *)
+
+Definition UIP (A : Type) := forall(x y : A), forall(p p' : x = y), p = p'.
+Theorem hset_has_UIP {A : Type}: IsHSet A -> UIP A.
+Proof. intros H x y p p'. destruct (H x y p p'). exact center. Qed.
