@@ -7,7 +7,7 @@ Require Import Limits.Graph.
 Require Import Limits.Equalizer.
 Require Import Limits.Product.
 Require Import Limits.Terminal.
-Require Import Limits.Fibered.
+Require Import Limits.Pullback.
 
 Local Open Scope morphism_scope.
 
@@ -346,13 +346,13 @@ Proof.
   apply E.
 Qed.
 
-Theorem AllLimitsFromFiberedAndTerminal (C : PreCategory)
-        (T : Terminal C) (F : AllFibered C) :
+Theorem AllLimitsFromPullbackAndTerminal (C : PreCategory)
+        (T : Terminal C) (F : AllPullbacks C) :
   HasFiniteLimits C.
 Proof.
   apply AllLimitsFromProductAndEqualizer.
   - exact T.
-  - intros a b. apply (ProductFromFiberedProduct T a b). apply F.
-  - intros a b f g. simple refine (EqualizerFromFiberedProduct f g _ _); [ idtac | apply F ].
-    apply (ProductFromFiberedProduct T b b). apply F.
+  - intros a b. apply (ProductFromPullback T a b). apply F.
+  - intros a b f g. simple refine (EqualizerFromPullback f g _ _); [ idtac | apply F ].
+    apply (ProductFromPullback T b b). apply F.
 Qed.

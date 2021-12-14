@@ -10,7 +10,7 @@ Require Import Limits.Equalizer.
 
 Local Open Scope morphism_scope.
 
-Section FiberedProduct.
+Section Pullback.
   Context {C : PreCategory}.
 
   Let f1 : Fin 3 := inr tt.
@@ -20,7 +20,7 @@ Section FiberedProduct.
   Context {a b c : object C}.
   Context {f : morphism C a c} {g : morphism C b c}.
 
-  Definition FiberedProductGr : Graph C (Fin 3) (Fin 2).
+  Definition PullbackGr : Graph C (Fin 3) (Fin 2).
   Proof.
     simple refine {| gr_vertex := fun f =>
                                     match f with
@@ -34,23 +34,23 @@ Section FiberedProduct.
     - exists f1. exists f3. exact f.
     - exists f2. exists f3. exact g.
   Defined.
-  Definition FiberedProduct := Limit FiberedProductGr.
-  Definition fprod_obj : FiberedProduct -> object C :=
+  Definition Pullback := Limit PullbackGr.
+  Definition fprod_obj : Pullback -> object C :=
     fun lim => cn_top (lim_cone lim).
-  Definition fpi1 (fprod : FiberedProduct) : morphism C (fprod_obj fprod) a :=
+  Definition fpi1 (fprod : Pullback) : morphism C (fprod_obj fprod) a :=
     cn_side (lim_cone fprod) f1.
-  Definition fpi2 (fprod : FiberedProduct) : morphism C (fprod_obj fprod) b :=
+  Definition fpi2 (fprod : Pullback) : morphism C (fprod_obj fprod) b :=
     cn_side (lim_cone fprod) f2.
-  Lemma fpi_comm (fprod : FiberedProduct) : f o fpi1 fprod = g o fpi2 fprod.
+  Lemma fpi_comm (fprod : Pullback) : f o fpi1 fprod = g o fpi2 fprod.
   Proof.
     rewrite (cn_comm (lim_cone fprod) fin1).
     rewrite (cn_comm (lim_cone fprod) fin2).
     reflexivity.
   Qed.
 
-  Definition fprod_cone (fprod : FiberedProduct) {d : object C} :
+  Definition fprod_cone (fprod : Pullback) {d : object C} :
     forall(c1 : morphism C d a) (c2 : morphism C d b),
-      f o c1 = g o c2 -> Cone FiberedProductGr.
+      f o c1 = g o c2 -> Cone PullbackGr.
   Proof.
     intros c1 c2 Hcomm. srapply mkCone; [ exact d | idtac | idtac ].
     - intro n. destruct n as [ n | u ]; [ destruct n | destruct u; exact c1 ].
@@ -61,7 +61,7 @@ Section FiberedProduct.
         destruct u; simpl; try reflexivity.
       rewrite Hcomm. reflexivity.
   Defined.
-  Lemma fprod_ex (fprod : FiberedProduct) {d : object C} :
+  Lemma fprod_ex (fprod : Pullback) {d : object C} :
     forall(c1 : morphism C d a) (c2 : morphism C d b),
       f o c1 = g o c2 ->
       exists(m : morphism C d (fprod_obj fprod)),
@@ -73,7 +73,7 @@ Section FiberedProduct.
     - apply (cnmph_comm mph f2).
   Qed.
 
-  Definition fprod_mph (fprod : FiberedProduct) {d : object C} :
+  Definition fprod_mph (fprod : Pullback) {d : object C} :
     forall(m : morphism C d (fprod_obj fprod)),
     forall(c1 : morphism C d a) (c2 : morphism C d b),
     forall(Hcomm : f o c1 = g o c2),
@@ -88,7 +88,7 @@ Section FiberedProduct.
     rewrite <- (cn_comm (lim_cone fprod) fin1). rewrite associativity.
     rewrite Hc2. rewrite Hcomm. reflexivity.
   Defined.
-  Lemma fprod_uniq (fprod : FiberedProduct) {d : object C} :
+  Lemma fprod_uniq (fprod : Pullback) {d : object C} :
     forall(m1 m2 : morphism C d (fprod_obj fprod)),
       fpi1 fprod o m1 = fpi1 fprod o m2 ->
       fpi2 fprod o m1 = fpi2 fprod o m2 ->
@@ -102,15 +102,15 @@ Section FiberedProduct.
     apply (lim_uniq fprod _ mph1 mph2).
   Qed.
 
-End FiberedProduct.
+End Pullback.
 
-Arguments FiberedProductGr {C a b c} f g.
-Arguments FiberedProduct {C a b c} f g.
+Arguments PullbackGr {C a b c} f g.
+Arguments Pullback {C a b c} f g.
 
-Definition AllFibered (C : PreCategory) :=
-  forall(a b c : object C), forall(f : morphism C a c), forall(g : morphism C b c), FiberedProduct f g.
+Definition AllPullbacks (C : PreCategory) :=
+  forall(a b c : object C), forall(f : morphism C a c), forall(g : morphism C b c), Pullback f g.
 
-Section FiberedEqualizer.
+Section PullbackEqualizer.
   Context {C : PreCategory}.
   Context {a b : object C}.
   Context (f g : morphism C a b).
@@ -118,9 +118,9 @@ Section FiberedEqualizer.
   Let d : morphism C b (prod_obj P) :=
         proj1 (product_ex P b (identity b) (identity b)).
   Let pack : morphism C a (prod_obj P) := proj1 (product_ex P a f g).
-  Let FPEqGr := FiberedProductGr pack d.
+  Let FPEqGr := PullbackGr pack d.
 
-  Definition FiberedConeFromEqualizer : Cone (EqualizerGr f g) -> Cone FPEqGr.
+  Definition PullbackConeFromEqualizer : Cone (EqualizerGr f g) -> Cone FPEqGr.
   Proof.
     intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
     - intro n. destruct3 n; [ idtac | exact (cn_side cn fin2) | exact (cn_side cn fin1) ].
@@ -139,7 +139,7 @@ Section FiberedEqualizer.
         * rewrite <- Hpi1. rewrite <- Hid1. apply left_identity.
         * rewrite <- Hpi2. rewrite <- Hid2. apply left_identity.
   Defined.
-  Definition EqualizerConeFromFiberedProduct : Cone FPEqGr -> Cone (EqualizerGr f g).
+  Definition EqualizerConeFromPullback : Cone FPEqGr -> Cone (EqualizerGr f g).
   Proof.
     intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
     - intro n. destruct2 n; [ exact (cn_side cn f2) | exact (cn_side cn f1) ].
@@ -154,18 +154,18 @@ Section FiberedEqualizer.
         rewrite associativity; rewrite associativity;
         f_ap; symmetry; exact Hcomm.
   Defined.
-  Definition FiberedCnMphFromEqualizer (c1 : Cone (EqualizerGr f g)) (c2 : Cone FPEqGr) :
-    ConeMorphism (FiberedConeFromEqualizer c1) c2 ->
-    ConeMorphism c1 (EqualizerConeFromFiberedProduct c2).
+  Definition PullbackCnMphFromEqualizer (c1 : Cone (EqualizerGr f g)) (c2 : Cone FPEqGr) :
+    ConeMorphism (PullbackConeFromEqualizer c1) c2 ->
+    ConeMorphism c1 (EqualizerConeFromPullback c2).
   Proof.
     intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
     intro n; destruct2 n.
     - apply (cnmph_comm mph f2).
     - apply (cnmph_comm mph f1).
   Defined.
-  Definition EqualizerCnMphFromFibered (c1 : Cone (EqualizerGr f g)) (c2 : Cone FPEqGr) :
-    ConeMorphism c1 (EqualizerConeFromFiberedProduct c2) ->
-    ConeMorphism (FiberedConeFromEqualizer c1) c2.
+  Definition EqualizerCnMphFromPullback (c1 : Cone (EqualizerGr f g)) (c2 : Cone FPEqGr) :
+    ConeMorphism c1 (EqualizerConeFromPullback c2) ->
+    ConeMorphism (PullbackConeFromEqualizer c1) c2.
   Proof.
     intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
     intro n; destruct3 n; [ idtac | apply (cnmph_comm mph fin2) | apply (cnmph_comm mph fin1) ].
@@ -179,28 +179,28 @@ Section FiberedEqualizer.
     - apply (cn_comm c1 fin2).
     - apply (cn_comm c1 fin1).
   Defined.
-  Theorem EqualizerFromFiberedProduct : FiberedProduct pack d -> Equalizer f g.
+  Theorem EqualizerFromPullback : Pullback pack d -> Equalizer f g.
   Proof.
     intro E. srapply mkLim.
-    - exact (EqualizerConeFromFiberedProduct (lim_cone E)).
-    - intro c. apply FiberedCnMphFromEqualizer. apply (lim_ex E).
+    - exact (EqualizerConeFromPullback (lim_cone E)).
+    - intro c. apply PullbackCnMphFromEqualizer. apply (lim_ex E).
     - intros c m1 m2.
-      pose (mph1 := EqualizerCnMphFromFibered _ _ m1).
-      pose (mph2 := EqualizerCnMphFromFibered _ _ m2).
+      pose (mph1 := EqualizerCnMphFromPullback _ _ m1).
+      pose (mph2 := EqualizerCnMphFromPullback _ _ m2).
       apply (lim_uniq E _ mph1 mph2).
   Qed.
 
-End FiberedEqualizer.
+End PullbackEqualizer.
 
-Section FiberedProduct.
+Section Pullback.
   Context {C : PreCategory}.
   Context (T : Terminal C).
   Context (a b : object C).
   Let _a := terminal_ex a T.
   Let _b := terminal_ex b T.
-  Let FPProdGr := FiberedProductGr _a _b.
+  Let FPProdGr := PullbackGr _a _b.
 
-  Definition FiberedConeFromProduct : Cone (ProductGr a b) -> Cone FPProdGr.
+  Definition PullbackConeFromProduct : Cone (ProductGr a b) -> Cone FPProdGr.
   Proof.
     intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | idtac ].
     - intro n; destruct3 n; [ apply (terminal_ex _ T)
@@ -208,23 +208,23 @@ Section FiberedProduct.
                             | apply (cn_side cn fin1) ].
     - intro n; destruct2 n; apply (terminal_uniq _ T).
   Defined.
-  Definition ProductConeFromFibered : Cone FPProdGr -> Cone (ProductGr a b).
+  Definition ProductConeFromPullback : Cone FPProdGr -> Cone (ProductGr a b).
   Proof.
     intro cn. srapply mkCone; [ exact (cn_top cn) | idtac | empty_ind' ].
     intro n; destruct2 n; [ apply (cn_side cn f2) | apply (cn_side cn f1) ].
   Defined.
-  Definition ProductCnMphFromFibered (c1 : Cone (ProductGr a b)) (c2 : Cone FPProdGr) :
-    ConeMorphism (FiberedConeFromProduct c1) c2 ->
-    ConeMorphism c1 (ProductConeFromFibered c2).
+  Definition ProductCnMphFromPullback (c1 : Cone (ProductGr a b)) (c2 : Cone FPProdGr) :
+    ConeMorphism (PullbackConeFromProduct c1) c2 ->
+    ConeMorphism c1 (ProductConeFromPullback c2).
   Proof.
     intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
     intro n; destruct2 n.
     - apply (cnmph_comm mph f2).
     - apply (cnmph_comm mph f1).
   Defined.
-  Definition FiberedCnMphFromProduct (c1 : Cone (ProductGr a b)) (c2 : Cone FPProdGr) :
-    ConeMorphism c1 (ProductConeFromFibered c2) ->
-    ConeMorphism (FiberedConeFromProduct c1) c2.
+  Definition PullbackCnMphFromProduct (c1 : Cone (ProductGr a b)) (c2 : Cone FPProdGr) :
+    ConeMorphism c1 (ProductConeFromPullback c2) ->
+    ConeMorphism (PullbackConeFromProduct c1) c2.
   Proof.
     intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | idtac ].
     intro n; destruct3 n.
@@ -232,15 +232,15 @@ Section FiberedProduct.
     - apply (cnmph_comm mph fin2).
     - apply (cnmph_comm mph fin1).
   Defined.
-  Theorem ProductFromFiberedProduct : FiberedProduct _a _b -> Product a b.
+  Theorem ProductFromPullback : Pullback _a _b -> Product a b.
   Proof.
     intro E. srapply mkLim.
-    - exact (ProductConeFromFibered (lim_cone E)).
-    - intro c. apply ProductCnMphFromFibered. apply (lim_ex E).
+    - exact (ProductConeFromPullback (lim_cone E)).
+    - intro c. apply ProductCnMphFromPullback. apply (lim_ex E).
     - intros c m1 m2.
-      pose (mph1 := FiberedCnMphFromProduct _ _ m1).
-      pose (mph2 := FiberedCnMphFromProduct _ _ m2).
+      pose (mph1 := PullbackCnMphFromProduct _ _ m1).
+      pose (mph2 := PullbackCnMphFromProduct _ _ m2).
       apply (lim_uniq E _ mph1 mph2).
   Qed.
 
-End FiberedProduct.
+End Pullback.
