@@ -229,3 +229,12 @@ Proof.
       reflexivity.
   - intros a b. apply LocallyCartesianFromPullbacks.LocalProductFromPullback. apply P.
 Qed.
+
+Theorem LCC_CompleteIffTerminal {C : PreCategory} (LCC : IsLocallyCartesian C) :
+  Terminal C <-> HasFiniteLimits C.
+Proof.
+  split; intro H.
+  - apply AllLimitsFromPullbackAndTerminal; try assumption.
+    apply LocallyCartesianHasPullbacks. exact LCC.
+  - exact (H 0%nat 0%nat (TerminalGr C)).
+Qed.
