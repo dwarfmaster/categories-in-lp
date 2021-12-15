@@ -66,6 +66,23 @@ Section Product.
     exact (lim_uniq P _ mph1 mph2).
   Qed.
 
+  Lemma product_ex_comm {a b c d : object C} (Pab : Product a b) (Pcd : Product c d) :
+    forall{e : object C}, forall(fa : morphism C e a), forall(fb : morphism C e b),
+    forall(fc : morphism C a c), forall(fd : morphism C b d),
+      proj1 (product_ex Pcd _ (fc o pi1 Pab) (fd o pi2 Pab)) o proj1 (product_ex Pab _ fa fb)
+            = proj1 (product_ex Pcd _ (fc o fa) (fd o fb)).
+  Proof.
+    intros e fa fb fc fd.
+    destruct (product_ex Pcd _ (fc o pi1 Pab) (fd o pi2 Pab)) as [ p1 [ H11 H12 ] ].
+    destruct (product_ex Pab _ fa fb) as [ p2 [ H21 H22 ] ].
+    destruct (product_ex Pcd _ (fc o fa) (fd o fb)) as [ p3 [ H31 H32 ] ].
+    simpl; apply product_uniq.
+    - rewrite <- associativity. rewrite <- H11.
+      rewrite associativity. rewrite <- H21. assumption.
+    - rewrite <- associativity. rewrite <- H12.
+      rewrite associativity. rewrite <- H22. assumption.
+  Qed.
+
 End Product.
 
 Arguments AllProducts C : clear implicits.
@@ -85,21 +102,8 @@ Module ProductFunctor.
                                  ((fst (F _1 m)) o pi1 (P s))
                                  ((snd (F _1 m)) o pi2 (P s)))).
       - intros s d1 d2 m1 m2; simpl.
-        destruct (product_ex (P d2) _
-                             (fst (F _1 (m2 o m1)) o pi1 (P s))
-                             (snd (F _1 (m2 o m1)) o pi2 (P s)))
-          as [ fprod [ Hprod1 Hprod2 ] ].
-        destruct (product_ex _ _ (fst (F _1 m2) o pi1 _) (snd (F _1 m2) o pi2 _))
-          as [ f2 [ H21 H22 ] ].
-        destruct (product_ex _ _ (fst (F _1 m1) o pi1 _) (snd (F _1 m1) o pi2 _))
-          as [ f1 [ H11 H12 ] ].
-        simpl. apply product_uniq.
-        + rewrite <- Hprod1. rewrite <- associativity. rewrite <- H21.
-          rewrite (associativity _ _ _ _ _ f1 _ _). rewrite <- H11.
-          rewrite (composition_of F). apply associativity.
-        + rewrite <- Hprod2. rewrite <- associativity. rewrite <- H22.
-          rewrite (associativity _ _ _ _ _ f1 _ _). rewrite <- H12.
-          rewrite (composition_of F). apply associativity.
+        rewrite product_ex_comm. rewrite (composition_of F).
+        rewrite associativity. rewrite associativity. reflexivity.
       - intro x; simpl. rewrite (identity_of F). simpl.
         destruct (product_ex _ _ (1 o pi1 _) (1 o pi2 _)) as [ eta [ H1 H2 ] ].
         apply product_uniq; simpl;
