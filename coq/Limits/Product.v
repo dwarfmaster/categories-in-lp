@@ -2,6 +2,7 @@
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
 From HoTT Require Import Spaces.Finite.
+From HoTT Require Import Categories.InitialTerminalCategory.Functors.
 Require Import Misc.
 Require Import Limits.Graph.
 
@@ -66,3 +67,53 @@ Section Product.
   Qed.
 
 End Product.
+
+Arguments AllProducts C : clear implicits.
+
+Module ProductFunctor.
+  Section ProductFunctor.
+    Context {D C : PreCategory}.
+    Context (F : Functor D (C * C)).
+    Context (P : forall(d : object D), Product (fst (F _0 d)%object) (snd (F _0 d)%object)).
+
+    Definition ProdFunctor : Functor D C.
+    Proof.
+      srapply Build_Functor.
+      - intro d. exact (prod_obj (P d)).
+      - intros s d m. simpl.
+        exact (proj1 (product_ex _ _
+                                 ((fst (F _1 m)) o pi1 (P s))
+                                 ((snd (F _1 m)) o pi2 (P s)))).
+      - intros s d1 d2 m1 m2; simpl.
+        destruct (product_ex (P d2) _
+                             (fst (F _1 (m2 o m1)) o pi1 (P s))
+                             (snd (F _1 (m2 o m1)) o pi2 (P s)))
+          as [ fprod [ Hprod1 Hprod2 ] ].
+        destruct (product_ex _ _ (fst (F _1 m2) o pi1 _) (snd (F _1 m2) o pi2 _))
+          as [ f2 [ H21 H22 ] ].
+        destruct (product_ex _ _ (fst (F _1 m1) o pi1 _) (snd (F _1 m1) o pi2 _))
+          as [ f1 [ H11 H12 ] ].
+        simpl. apply product_uniq.
+        + rewrite <- Hprod1. rewrite <- associativity. rewrite <- H21.
+          rewrite (associativity _ _ _ _ _ f1 _ _). rewrite <- H11.
+          rewrite (composition_of F). apply associativity.
+        + rewrite <- Hprod2. rewrite <- associativity. rewrite <- H22.
+          rewrite (associativity _ _ _ _ _ f1 _ _). rewrite <- H12.
+          rewrite (composition_of F). apply associativity.
+      - intro x; simpl. rewrite (identity_of F). simpl.
+        destruct (product_ex _ _ (1 o pi1 _) (1 o pi2 _)) as [ eta [ H1 H2 ] ].
+        apply product_uniq; simpl;
+          [ rewrite <- H1 | rewrite <- H2 ];
+          rewrite left_identity; rewrite right_identity;
+          reflexivity.
+    Defined.
+
+  End ProductFunctor.
+End ProductFunctor.
+
+Definition ProdFunctor {C : PreCategory} (P : AllProducts C) : Functor (C * C) C :=
+  ProductFunctor.ProdFunctor 1%functor (fun p => P (fst p) (snd p)).
+Definition ProdRFunctor {C : PreCategory} (X : object C) (P : forall Y, Product Y X) : Functor C C :=
+  ProductFunctor.ProdFunctor ((1, ! X) o ProductLaws.Law1.inverse C)%functor P.
+Definition ProdLFunctor {C : PreCategory} (X : object C) (P : forall Y, Product X Y) : Functor C C :=
+  ProductFunctor.ProdFunctor ((!X, 1) o ProductLaws.Law1.inverse' C)%functor P.
