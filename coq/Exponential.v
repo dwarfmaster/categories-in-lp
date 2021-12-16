@@ -165,3 +165,30 @@ Section ExponentialAdjunction.
   Qed.
 
 End ExponentialAdjunction.
+
+Section ExponentialFromAdjunction.
+  Context {C : PreCategory}.
+  Context (Y : object C).
+  Context {P : forall X, Product X Y}.
+  Context {F : Functor C C}.
+  Let Fp := ProdRFunctor Y P.
+  Context (Adj : Fp -| F).
+
+  Theorem ExponentialFromAdjunction : forall X, ExponentialObject X Y P.
+  Proof.
+    intro X. simple refine {| eobject := F _0 X; ev := counit Adj X; |}.
+    intros z e. simpl in e. srapply Build_Contr.
+    - exists (F _1 e o unit Adj z). rewrite composition_of. rewrite <- associativity.
+      rewrite (commutes (counit Adj)). rewrite associativity.
+      rewrite (unit_counit_equation_1 Adj). simpl. apply right_identity.
+    - intros [ u Hu ]; simpl.
+      assert (u = F _1 e o unit Adj z) as Heq.
+      { rewrite <- Hu. rewrite composition_of.
+        rewrite associativity. rewrite <- (commutes (unit Adj)).
+        rewrite <- associativity. rewrite (unit_counit_equation_2 Adj).
+        rewrite left_identity. reflexivity. }
+      generalize dependent Hu. rewrite Heq. intro Hu. f_ap. apply hset_has_UIP.
+      apply trunc_morphism.
+  Qed.
+
+End ExponentialFromAdjunction.
