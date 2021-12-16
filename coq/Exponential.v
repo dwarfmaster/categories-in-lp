@@ -3,6 +3,7 @@ From HoTT Require Import Basics.
 From HoTT Require Import Categories.
 From HoTT Require Import Spaces.Finite.
 From HoTT Require Import Categories.InitialTerminalCategory.Functors.
+From HoTT Require Import Categories.Adjoint.UnitCounit.
 Require Import Misc.
 Require Import Limits.Graph.
 Require Import Limits.Product.
@@ -112,3 +113,55 @@ Definition ExponentiatingFunctor {C : PreCategory} (X : object C)
   ExpFunctor.ExponentialFunctor
     ((!X,1) o ProductLaws.Law1.inverse' C^op)%functor
     (fun d x => P x d) E.
+
+Section ExponentialAdjunction.
+  Context {C : PreCategory}.
+  Context (Y : object C).
+  Context {P : forall X, Product X Y}.
+  Context (E : forall X, ExponentialObject X Y P).
+
+  Let Fe := ExponentiateFunctor E.
+  Let Fp := ProdRFunctor Y P.
+
+  Lemma curry_comp {a b c : object C} :
+    forall(m1 : morphism C (prod_obj (P a)) b),
+    forall(m2 : morphism C b c),
+      curry (E c) (m2 o ev (E b)) o curry (E b) m1 = curry (E c) (m2 o m1).
+  Proof.
+    intros m1 m2. symmetry. apply curry_uniq.
+    rewrite (composition_of (ProdRFunctor Y P)). rewrite <- associativity.
+    rewrite curry_comm. rewrite associativity. rewrite curry_comm.
+    reflexivity.
+  Qed.
+
+  Definition exp_unit : NaturalTransformation 1 (Fe o Fp).
+  Proof.
+    srapply Build_NaturalTransformation.
+    - intro c; simpl. apply curry. exact 1.
+    - intros s d m; simpl. repeat rewrite left_identity.
+      rewrite product_ex_id. rewrite right_identity.
+      rewrite curry_comp. rewrite right_identity.
+      symmetry. apply curry_uniq. rewrite composition_of.
+      rewrite <- associativity. rewrite curry_comm.
+      simpl. repeat rewrite left_identity. reflexivity.
+  Defined.
+  Definition exp_counit : NaturalTransformation (Fp o Fe) 1.
+  Proof.
+    srapply Build_NaturalTransformation.
+    - intro c; simpl. apply ev.
+    - intros s d m; simpl. rewrite left_identity.
+      rewrite product_ex_id. rewrite right_identity.
+      pose (Hcomm := curry_comm (E d) (m o ev (E s))). simpl in Hcomm.
+      rewrite left_identity in Hcomm. rewrite Hcomm. reflexivity.
+  Defined.
+
+  Theorem ExponentialAdjunction : Fp -| Fe.
+  Proof.
+    refine {| unit := exp_unit; counit := exp_counit; |}.
+    - intro c; simpl. rewrite curry_comm. reflexivity.
+    - intro c; simpl. rewrite left_identity. rewrite product_ex_id.
+      rewrite right_identity. rewrite curry_comp. rewrite right_identity.
+      apply curry_uniq. rewrite identity_of. apply right_identity.
+  Qed.
+
+End ExponentialAdjunction.

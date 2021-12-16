@@ -83,6 +83,12 @@ Section Product.
       rewrite associativity. rewrite <- H22. assumption.
   Qed.
 
+  Lemma product_ex_id {a b : object C} (P : Product a b) :
+    proj1 (product_ex P _ (pi1 P) (pi2 P)) = 1.
+  Proof. destruct (product_ex P _ (pi1 P) (pi2 P)) as [ f [ Hpi1 Hpi2 ] ]; simpl.
+         apply product_uniq; rewrite right_identity; [ exact Hpi1^ | exact Hpi2^ ].
+  Qed.
+
 End Product.
 
 Arguments AllProducts C : clear implicits.
