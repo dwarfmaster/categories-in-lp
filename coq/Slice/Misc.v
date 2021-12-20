@@ -78,4 +78,8 @@ Section SliceUtilities.
   Lemma slice_m_comm {z : object C} (x y : object (C/z)) (h : morphism (C/z) x y) :
     f y o m h = f x.
   Proof. destruct h; simpl. simpl in p_sym. rewrite left_identity in p_sym. exact p_sym. Qed.
+  Lemma slice_m_comp {z : object C} (a b c : object (C/z))
+        (h1 : morphism (C/z) a b) (h2 : morphism (C/z) b c) :
+    m (h2 o h1) = m h2 o m h1.
+  Proof. reflexivity. Qed.
 End SliceUtilities.
