@@ -127,3 +127,43 @@ Definition ProdRFunctor {C : PreCategory} (X : object C) (P : forall Y, Product 
   ProductFunctor.ProdFunctor ((1, ! X) o ProductLaws.Law1.inverse C)%functor P.
 Definition ProdLFunctor {C : PreCategory} (X : object C) (P : forall Y, Product X Y) : Functor C C :=
   ProductFunctor.ProdFunctor ((!X, 1) o ProductLaws.Law1.inverse' C)%functor P.
+
+Section CommonMorphisms.
+  Context {C : PreCategory}.
+
+  Lemma prod_delta {x : object C} (P : Product x x) :
+    exists(d : morphism C x (prod_obj P)), (pi1 P o d = 1) * (pi2 P o d = 1).
+  Proof.
+    pose (pr := product_ex P _ 1 1). exists pr.1.
+    split; [ rewrite (fst pr.2) | rewrite (snd pr.2) ]; reflexivity.
+  Qed.
+
+  Definition ProdSwap {x y : object C} (P : Product x y) : Product y x.
+  Proof.
+    srapply mkLim.
+    - srapply mkCone; [ exact (cn_top (lim_cone P)) | | empty_ind' ].
+      intro n; destruct2 n; [ exact (cn_side (lim_cone P) fin1)
+                            | exact (cn_side (lim_cone P) fin2) ].
+    - intro cn. pose (pr := product_ex P _ (cn_side cn fin2) (cn_side cn fin1)).
+      srapply mkCnMph; [ exact pr.1 | ]; intro n; destruct2 n;
+        [ rewrite (fst pr.2) | rewrite (snd pr.2) ]; reflexivity.
+    - intros cn mph1 mph2. apply product_uniq.
+      + rewrite (cnmph_comm mph1 fin2). rewrite (cnmph_comm mph2 fin2). reflexivity.
+      + rewrite (cnmph_comm mph1 fin1). rewrite (cnmph_comm mph2 fin1). reflexivity.
+  Defined.
+  Lemma ProdSwapPi1 {x y : object C} (P : Product x y) :
+    pi1 (ProdSwap P) = pi2 P.
+  Proof. reflexivity. Qed.
+  Lemma ProdSwapPi2 {x y : object C} (P : Product x y) :
+    pi2 (ProdSwap P) = pi1 P.
+  Proof. reflexivity. Qed.
+
+  Lemma prod_swap {x y : object C} (Pxy : Product x y) (Pyx : Product y x) :
+    exists(sw : morphism C (prod_obj Pxy) (prod_obj Pyx)),
+      (pi1 Pyx o sw = pi2 Pxy) * (pi2 Pyx o sw = pi1 Pxy).
+  Proof.
+    pose (pr := product_ex Pyx _ (pi2 Pxy) (pi1 Pxy)). exists pr.1.
+    split; [ exact (fst pr.2)^ | exact (snd pr.2)^ ].
+  Qed.
+
+End CommonMorphisms.
