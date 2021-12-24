@@ -82,4 +82,7 @@ Section SliceUtilities.
         (h1 : morphism (C/z) a b) (h2 : morphism (C/z) b c) :
     m (h2 o h1) = m h2 o m h1.
   Proof. reflexivity. Qed.
+  Lemma slice_m_id {z : object C} (a : object (C/z)) :
+    m (identity a) = identity (s a).
+  Proof. reflexivity. Qed.
 End SliceUtilities.
