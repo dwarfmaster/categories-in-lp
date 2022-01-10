@@ -114,3 +114,49 @@ Section AdjunctsPreserveLimits.
     intro L. exists(RightAdjunctLimit L). reflexivity.
   Qed.
 End AdjunctsPreserveLimits.
+
+From HoTT Require Import Categories.HomFunctor.
+
+Section HomPreservesLimits.
+  Context `{Funext}.
+  Context {C : PreCategory}.
+  Context (A : object (C^op)).
+  Context {Size Arrows : Type}.
+  Context (Gr : Graph C Size Arrows).
+  Definition F := covariant_hom_functor C A.
+
+  Definition mkCConeFromSetCone (cn : Cone (graph_of F Gr)) :
+    cn_top cn -> Cone Gr.
+  Proof.
+    intro x. srapply mkCone; [ exact A | | ].
+    - intro n. exact (cn_side cn n x).
+    - intro a; simpl. rewrite <- (cn_comm cn a); simpl.
+      unfold gr_edge; simpl. rewrite right_identity. reflexivity.
+  Defined.
+  Definition CHomConeMorphism (cSet : Cone (graph_of F Gr)) (cC : Cone Gr) (x : cn_top cSet) :
+    ConeMorphism cSet (cone_of F cC) ->
+    ConeMorphism (mkCConeFromSetCone cSet x) cC.
+  Proof.
+    intro mph. srapply mkCnMph.
+    - simpl. exact (cnmph_mph mph x).
+    - intro n; simpl. rewrite <- (cnmph_comm mph n); simpl.
+      rewrite right_identity. reflexivity.
+  Defined.
+
+  Definition CovariantHomLimit (L : Limit Gr) : Limit (graph_of F Gr).
+  Proof.
+    srapply mkLim; [ exact (cone_of F (lim_cone L)) | | ].
+    - intro c. pose (c' := mkCConeFromSetCone c). srapply mkCnMph.
+      + simpl. intro x. pose (mph := lim_ex L (c' x)). exact (cnmph_mph mph).
+      + intro n. apply path_forall. intro x; simpl. rewrite right_identity.
+        pose (mph := lim_ex L (c' x)). rewrite (cnmph_comm mph). reflexivity.
+    - intros c m1 m2. apply path_forall. intro x.
+      pose (mph1 := CHomConeMorphism x m1). pose (mph2 := CHomConeMorphism x m2).
+      pose (Huniq := lim_uniq L _ mph1 mph2). exact Huniq.
+  Defined.
+
+  Theorem CovariantHomPreservesLimit : FunctorPreservesLimit (covariant_hom_functor C A) Gr.
+  Proof.
+    intro L. exists(CovariantHomLimit L). reflexivity.
+  Qed.
+End HomPreservesLimits.
