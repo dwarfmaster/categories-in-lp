@@ -100,16 +100,26 @@ Module LocallyCartesianPullbacks.
         assert (CommaCategory.g (AdjunctPullbackLCConeMorphism m)
                 = CommaCategory.g (AdjunctPullbackLCConeMorphism m')) as Heq.
         { f_ap. exact (lim_uniq prod _ mph mph'). } apply Heq.
-    Qed.
+    Defined.
   End LCPullbacks.
 End LocallyCartesianPullbacks.
+
+Theorem LocallyCartesianPullbacks {C : PreCategory} (LCC : IsLocallyCartesian C)
+        {a b c : object C} (f : morphism C a c) (g : morphism C b c) :
+  exists(P : Pullback f g),
+    fprod_obj P = Slice.s (prod_obj (snd (LCC c) (Build_SliceObject f) (Build_SliceObject g))).
+Proof.
+  exists(LocallyCartesianPullbacks.PullbackFromLocalProduct (snd (LCC c)
+                                                            (Build_SliceObject f)
+                                                            (Build_SliceObject g))).
+  reflexivity.
+Qed.
 
 Theorem LocallyCartesianHasPullbacks {C : PreCategory} :
   IsLocallyCartesian C -> AllPullbacks C.
 Proof.
-  intro LCC. intros x y z f g.
-  apply LocallyCartesianPullbacks.PullbackFromLocalProduct. apply (LCC z).
-Qed.
+  intro LCC. intros x y z f g. apply LocallyCartesianPullbacks. assumption.
+Defined.
 
 Module LocallyCartesianFromPullbacks.
   Section LCPullbacks.
