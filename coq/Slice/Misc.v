@@ -58,6 +58,14 @@ Section SliceUtilities.
     intro Heq. rewrite Heq. clear Heq.
     destruct b; destruct b0. reflexivity.
   Qed.
+  Lemma slice_f_inv_r {y : object C} (x : object (C/y)) :
+    Build_SliceObject (Slice.f x) = x.
+  Proof.
+    simple refine (slice_f_injective _ _ _ _); [ reflexivity | reflexivity ].
+  Qed.
+  Lemma slice_f_inv_l {x y : object C} (m : morphism C x y) :
+    Slice.f (Build_SliceObject m) = m.
+  Proof. reflexivity. Qed.
 
   Lemma path_SliceMorphism {z : object C} (x y : object (C/z)) (h1 h2 : morphism C (s x) (s y))
         (H1 : (f y) o h1 = f x) (H2 : (f y) o h2 = f x) :
