@@ -1,6 +1,7 @@
 
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
+From HoTT Require Import Categories.Category.Morphisms.
 From HoTT Require Import Spaces.Finite.
 From HoTT Require Import Types.Equiv.
 From HoTT Require Import Types.Sigma.
@@ -38,6 +39,48 @@ Record Arrows {C : PreCategory} :=
 Arguments Arrows C : clear implicits.
 Arguments mkArrow {C arr_src arr_dst} arr_mph.
 
+(*  ___ ____   ___   *)
+(* |_ _/ ___| / _ \  *)
+(*  | |\___ \| | | | *)
+(*  | | ___) | |_| | *)
+(* |___|____/ \___/  *)
+Section EqToIso.
+  Local Open Scope morphism.
+  Definition eqToIso {C : PreCategory} {x y : object C} (p : x = y) : morphism C x y :=
+    p # 1.
+  Lemma eqToIso_1 {C : PreCategory} {x : object C} : @eqToIso C x x 1 = 1.
+  Proof. reflexivity. Qed.
+  Lemma eqToIso_pp {C : PreCategory} {x y z : object C} (p1 : x = y) (p2 : y = z) :
+    eqToIso (p1 @ p2) = eqToIso p2 o eqToIso p1.
+  Proof.
+    unfold eqToIso. rewrite transport_pp.
+    destruct p1. rewrite right_identity. reflexivity.
+  Qed.
+  Lemma eqToIsoInv_r {C : PreCategory} {x y : object C} (p : x = y) :
+    eqToIso p^ o eqToIso p = 1.
+  Proof. rewrite <- eqToIso_pp. rewrite concat_pV. exact eqToIso_1. Qed.
+  Lemma eqToIsoInv_l {C : PreCategory} {x y : object C} (p : x = y) :
+    eqToIso p o eqToIso p^ = 1.
+  Proof. rewrite <- eqToIso_pp. rewrite concat_Vp. exact eqToIso_1. Qed.
+  Lemma eqToIsoIsIso {C : PreCategory} {x y : object C} (p : x = y) :
+    IsIsomorphism (eqToIso p).
+  Proof.
+    srapply Build_IsIsomorphism.
+    - exact (eqToIso p^).
+    - apply eqToIsoInv_r.
+    - apply eqToIsoInv_l.
+  Qed.
+  Instance eqToIsoIso (C : PreCategory) (x y : object C) (p : x = y) : IsIsomorphism (eqToIso p) :=
+    eqToIsoIsIso p.
+  Lemma eqToIso_V {C : PreCategory} {x y : object C} (p : x = y) :
+    eqToIso p^ = (eqToIso p)^-1.
+  Proof.
+    apply (inverse_unique C x y (eqToIso p)).
+    - apply eqToIsoInv_r.
+    - apply right_inverse.
+  Qed.
+
+End EqToIso.
 
 (* __     __        _                  *)
 (* \ \   / /__  ___| |_ ___  _ __ ___  *)
