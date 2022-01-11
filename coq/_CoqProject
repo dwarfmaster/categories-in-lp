@@ -1,3 +1,16 @@
--R . Categories
 -arg -noinit
 -arg -indices-matter
+-R . Categories
+Misc.v
+Limits/Graph.v
+Limits/Functor.v
+Limits/Equalizer.v
+Limits/Product.v
+Limits/Pullback.v
+Limits/Terminal.v
+Limits/Extension.v
+Slice/Misc.v
+Slice/BaseChangeFunctor.v
+Cartesian.v
+Exponential.v
+CartesianClosed.v
