@@ -1,6 +1,7 @@
 
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
+From HoTT Require Import Categories.Category.Morphisms.
 From HoTT Require Import Spaces.Finite.
 From HoTT Require Import Categories.InitialTerminalCategory.Functors.
 Require Import Misc.
@@ -165,5 +166,19 @@ Section CommonMorphisms.
     pose (pr := product_ex Pyx _ (pi2 Pxy) (pi1 Pxy)). exists pr.1.
     split; [ exact (fst pr.2)^ | exact (snd pr.2)^ ].
   Qed.
+  Definition prod_swap_mph {x y : object C} (Pxy : Product x y) (Pyx : Product y x) :
+    morphism C (prod_obj Pxy) (prod_obj Pyx) :=
+    (prod_swap Pxy Pyx).1.
 
 End CommonMorphisms.
+
+Global Instance prod_swap_iso {C : PreCategory} {x y : object C} (Pxy : Product x y) (Pyx : Product y x) :
+                              IsIsomorphism (prod_swap_mph Pxy Pyx).
+Proof.
+  srapply Build_IsIsomorphism; [ exact (prod_swap_mph Pyx Pxy) | | ];
+    apply product_uniq; rewrite <- associativity; rewrite right_identity.
+  - rewrite (fst (prod_swap _ _).2). rewrite (snd (prod_swap _ _).2). reflexivity.
+  - rewrite (snd (prod_swap _ _).2). rewrite (fst (prod_swap _ _).2). reflexivity.
+  - rewrite (fst (prod_swap _ _).2). rewrite (snd (prod_swap _ _).2). reflexivity.
+  - rewrite (snd (prod_swap _ _).2). rewrite (fst (prod_swap _ _).2). reflexivity.
+Qed.
