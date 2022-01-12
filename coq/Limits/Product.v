@@ -119,6 +119,22 @@ Module ProductFunctor.
           reflexivity.
     Defined.
 
+    Lemma ProdFunctorPi1 {s d : object D} (f : morphism D s d) :
+      pi1 (P d) o ProdFunctor _1 f = fst (F _1 f) o pi1 (P s).
+    Proof.
+      rewrite <- (fst (product_ex (P d) (prod_obj (P s))
+                                 (fst (F _1 f) o pi1 (P s))
+                                 (snd (F _1 f) o pi2 (P s))).2).
+      reflexivity.
+    Qed.
+    Lemma ProdFunctorPi2 {s d : object D} (f : morphism D s d) :
+      pi2 (P d) o ProdFunctor _1 f = snd (F _1 f) o pi2 (P s).
+    Proof.
+      rewrite <- (snd (product_ex (P d) (prod_obj (P s))
+                                 (fst (F _1 f) o pi1 (P s))
+                                 (snd (F _1 f) o pi2 (P s))).2).
+      reflexivity.
+    Qed.
   End ProductFunctor.
 End ProductFunctor.
 
@@ -128,6 +144,45 @@ Definition ProdRFunctor {C : PreCategory} (X : object C) (P : forall Y, Product 
   ProductFunctor.ProdFunctor ((1, ! X) o ProductLaws.Law1.inverse C)%functor P.
 Definition ProdLFunctor {C : PreCategory} (X : object C) (P : forall Y, Product X Y) : Functor C C :=
   ProductFunctor.ProdFunctor ((!X, 1) o ProductLaws.Law1.inverse' C)%functor P.
+
+Lemma ProdFunctorPi1 {C : PreCategory} (P : AllProducts C) :
+  forall(s d : object (C*C)) (f : morphism (C*C) s d),
+    pi1 (P (fst d) (snd d)) o ProdFunctor P _1 f = fst f o pi1 (P (fst s) (snd s)).
+Proof.
+  intros s d f. exact (ProductFunctor.ProdFunctorPi1 1%functor (fun p => P (fst p) (snd p)) f).
+Qed.
+Lemma ProdFunctorPi2 {C : PreCategory} (P : AllProducts C) :
+  forall(s d : object (C*C)) (f : morphism (C*C) s d),
+    pi2 (P (fst d) (snd d)) o ProdFunctor P _1 f = snd f o pi2 (P (fst s) (snd s)).
+Proof.
+  intros s d f. exact (ProductFunctor.ProdFunctorPi2 1%functor (fun p => P (fst p) (snd p)) f).
+Qed.
+Lemma ProdRFunctorPi1 {C : PreCategory} (X : object C) (P : forall Y, Product Y X):
+  forall(s d : object C) (f : morphism C s d),
+    pi1 (P d) o ProdRFunctor X P _1 f = f o pi1 (P s).
+Proof.
+  intros s d f. exact (ProductFunctor.ProdFunctorPi1 ((1,!X) o ProductLaws.Law1.inverse C)%functor P f).
+Qed.
+Lemma ProdRFunctorPi2 {C : PreCategory} (X : object C) (P : forall Y, Product Y X):
+  forall(s d : object C) (f : morphism C s d),
+    pi2 (P d) o ProdRFunctor X P _1 f = pi2 (P s).
+Proof.
+  intros s d f. rewrite <- (left_identity _ _ _ (pi2 (P s))).
+  exact (ProductFunctor.ProdFunctorPi2 ((1,!X) o ProductLaws.Law1.inverse C)%functor P f).
+Qed.
+Lemma ProdLFunctorPi1 {C : PreCategory} (X : object C) (P : forall Y, Product X Y):
+  forall(s d : object C) (f : morphism C s d),
+    pi1 (P d) o ProdLFunctor X P _1 f = pi1 (P s).
+Proof.
+  intros s d f. rewrite <- (left_identity _ _ _ (pi1 (P s))).
+  exact (ProductFunctor.ProdFunctorPi1 ((!X,1) o ProductLaws.Law1.inverse' C)%functor P f).
+Qed.
+Lemma ProdLFunctorPi2 {C : PreCategory} (X : object C) (P : forall Y, Product X Y):
+  forall(s d : object C) (f : morphism C s d),
+    pi2 (P d) o ProdLFunctor X P _1 f = f o pi2 (P s).
+Proof.
+  intros s d f. exact (ProductFunctor.ProdFunctorPi2 ((!X,1) o ProductLaws.Law1.inverse' C)%functor P f).
+Qed.
 
 Section CommonMorphisms.
   Context {C : PreCategory}.
@@ -169,16 +224,17 @@ Section CommonMorphisms.
   Definition prod_swap_mph {x y : object C} (Pxy : Product x y) (Pyx : Product y x) :
     morphism C (prod_obj Pxy) (prod_obj Pyx) :=
     (prod_swap Pxy Pyx).1.
-
+  Lemma prod_swap_invo {x y : object C} (Pxy : Product x y) (Pyx : Product y x) :
+    prod_swap_mph Pxy Pyx o prod_swap_mph Pyx Pxy = 1.
+  Proof.
+    apply product_uniq; rewrite <- associativity; rewrite right_identity.
+    - rewrite (fst (prod_swap _ _).2). rewrite (snd (prod_swap _ _).2). reflexivity.
+    - rewrite (snd (prod_swap _ _).2). rewrite (fst (prod_swap _ _).2). reflexivity.
+  Qed.
 End CommonMorphisms.
 
 Global Instance prod_swap_iso {C : PreCategory} {x y : object C} (Pxy : Product x y) (Pyx : Product y x) :
                               IsIsomorphism (prod_swap_mph Pxy Pyx).
 Proof.
-  srapply Build_IsIsomorphism; [ exact (prod_swap_mph Pyx Pxy) | | ];
-    apply product_uniq; rewrite <- associativity; rewrite right_identity.
-  - rewrite (fst (prod_swap _ _).2). rewrite (snd (prod_swap _ _).2). reflexivity.
-  - rewrite (snd (prod_swap _ _).2). rewrite (fst (prod_swap _ _).2). reflexivity.
-  - rewrite (fst (prod_swap _ _).2). rewrite (snd (prod_swap _ _).2). reflexivity.
-  - rewrite (snd (prod_swap _ _).2). rewrite (fst (prod_swap _ _).2). reflexivity.
+  srapply Build_IsIsomorphism; [ exact (prod_swap_mph Pyx Pxy) | | ]; apply prod_swap_invo.
 Qed.
