@@ -1,6 +1,7 @@
 
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
+From HoTT Require Import Categories.Category.Morphisms.
 From HoTT Require Import Spaces.Finite.
 From HoTT Require Import Categories.InitialTerminalCategory.Functors.
 From HoTT Require Import Categories.Adjoint.UnitCounit.
@@ -18,6 +19,7 @@ Local Open Scope morphism.
 Local Open Scope object.
 
 Section ExponentialObject.
+  Context {HF : Funext}.
   Context {C : PreCategory}.
   Context {x y : object C}.
   Context {P : forall z, Product z y}.
@@ -46,9 +48,38 @@ Section ExponentialObject.
     intros e u H. unfold curry. destruct (currying E e) as [ [ u' Hcomm ] Huniq ]; simpl.
     apply (ap proj1 (Huniq (u;H))).
   Qed.
+
+  Definition curry_inv {z : object C} (E : ExponentialObject) :
+    morphism C z (eobject E) -> morphism C (prod_obj (P z)) x := fun g => ev E o (F _1 g).
+  Lemma curry_inv_L {z : object C} (E : ExponentialObject) :
+    forall(e : morphism C (prod_obj (P z)) x), curry_inv E (curry E e) = e.
+  Proof. apply curry_comm. Qed.
+  Lemma curry_inv_R {z : object C} (E : ExponentialObject) :
+    forall(e : morphism C z (eobject E)), curry E (curry_inv E e) = e.
+  Proof. intro e. apply curry_uniq. reflexivity. Qed.
+
+  Definition curry_mph (z : object C) (E : ExponentialObject) :
+    morphism set_cat
+             (Build_HSet (morphism C (prod_obj (P z)) x))
+             (Build_HSet (morphism C z (eobject E))) :=
+    fun e => curry E e.
+  Definition curry_inv_mph (z : object C) (E : ExponentialObject) :
+    morphism set_cat
+             (Build_HSet (morphism C z (eobject E)))
+             (Build_HSet (morphism C (prod_obj (P z)) x)) :=
+    fun e => curry_inv E e.
 End ExponentialObject.
 
 Arguments ExponentialObject {C} (x y) P.
+Global Instance curryIso `{Funext} {C : PreCategory} {x y z : object C}
+       {P : forall z, Product z y} (E : ExponentialObject x y P)
+  : IsIsomorphism (curry_mph z E).
+Proof.
+  srapply Build_IsIsomorphism; [ exact (curry_inv_mph z E) | | ];
+    apply path_forall; intro e;
+    [ apply curry_inv_L | apply curry_inv_R ].
+Defined.
+
 Definition AllExponentials {C : PreCategory} (P : AllProducts C) :=
   forall(x y : object C), ExponentialObject x y (fun z => P z y).
 
