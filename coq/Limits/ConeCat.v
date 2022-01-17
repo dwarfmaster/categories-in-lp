@@ -73,4 +73,17 @@ Section ConeCategory.
        (@CnMphCompLeftId)
        (@CnMphCompRightId)
        CnMphIsHSet.
+
+  Lemma cnmph_comp {a b c : object ConeCategory} :
+    forall(f : morphism ConeCategory a b),
+    forall(g : morphism ConeCategory b c),
+      cnmph_mph (g o f) = cnmph_mph g o cnmph_mph f.
+  Proof. intros f g. reflexivity. Qed.
+  Lemma cnmph_id (a : object ConeCategory) :
+    cnmph_mph (CnMphId a) = 1.
+  Proof. reflexivity. Qed.
+  Definition cnmph_Functor : Functor ConeCategory C.
+  Proof.
+    srapply Build_Functor; [ exact cn_top | intros s d; exact cnmph_mph | | ]; intros; reflexivity.
+  Defined.
 End ConeCategory.
