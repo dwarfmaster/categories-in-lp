@@ -4,6 +4,8 @@ From HoTT Require Import Categories.
 From HoTT Require Import Categories.Category.Morphisms.
 From HoTT Require Import Categories.Functor.
 From HoTT Require Import Categories.FunctorCategory.
+From HoTT Require Import Categories.NaturalTransformation.
+From HoTT Require Import Categories.NaturalTransformation.Paths.
 From HoTT Require Import Spaces.Finite.
 Require Import Misc.
 Require Import Limits.Graph.
@@ -29,6 +31,18 @@ Section GraphOfFunctor.
     srapply mkGraph; [ intro s; exact ((gr_vertex Gr s) _0 x) | ].
     intro a. destruct (gr_edges Gr a) as [ src [ dst tnat ] ].
     exists src. exists dst. exact (tnat x).
+  Defined.
+  Definition pointwiseCone (x : object C) : Cone Gr -> Cone (pointwiseGraph x).
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn _0 x) | exact (fun n => cn_side cn n x) | ].
+    intro a; unfold gr_edge, gr_src, gr_dst; simpl. rewrite <- (cn_comm cn); simpl.
+    reflexivity.
+  Defined.
+  Definition pointwiseConeMorphism (x : object C) (c1 c2 : Cone Gr) :
+    ConeMorphism c1 c2 -> ConeMorphism (pointwiseCone x c1) (pointwiseCone x c2).
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph x) | ].
+    intro n. simpl. rewrite <- (cnmph_comm mph n). reflexivity.
   Defined.
 
   Definition extendPointwiseCone {s d : object C} (f : morphism C s d) :
@@ -123,9 +137,78 @@ Section GraphOfFunctor.
       reflexivity.
   Defined.
 
-  (* Definition makePointwiseCone : (forall x : object C, Limit (pointwiseGraph x)) -> Cone Gr. *)
-  (* Proof. *)
-  (*   intro pointLim. srapply mkCone. *)
-  (*   - *)
+  Definition makePointwiseCone : (forall x : object C, Limit (pointwiseGraph x)) -> Cone Gr.
+  Proof.
+    intro pointLim. srapply mkCone; [ exact (makePointwiseFunctor pointLim) | | ].
+    - intro n. srapply Build_NaturalTransformation.
+      + intro c; simpl. exact (cn_side (lim_cone (pointLim c)) n).
+      + intros s d m; simpl.
+        rewrite (cnmph_comm (lim_ex (pointLim d)
+                                    (extendPointwiseCone m (lim_cone (pointLim s))))).
+        reflexivity.
+    - intro a; apply path_natural_transformation; intro c; simpl.
+      rewrite (cn_comm (lim_cone (pointLim c))). reflexivity.
+  Defined.
 
+  Lemma makePointwiseConeSection (x : C) (pointLim : forall x : object C, Limit (pointwiseGraph x)) :
+    pointwiseCone x (makePointwiseCone pointLim) = lim_cone (pointLim x).
+  Proof.
+    srapply path_Cone; [ reflexivity | ]. intro n; simpl. reflexivity.
+  Defined.
+  Definition pointwiseConeMorphism' (x : object C) (cn : Cone Gr):
+    forall(pointLim : forall x : C, Limit (pointwiseGraph x)),
+      ConeMorphism cn (makePointwiseCone pointLim) ->
+      ConeMorphism (pointwiseCone x cn) (lim_cone (pointLim x)).
+  Proof.
+    intros pointLim mph. srapply mkCnMph; [ exact (cnmph_mph mph x) | ].
+    intro n; simpl. rewrite <- (cnmph_comm mph n). reflexivity.
+  Defined.
+
+  Lemma commutesPreCompose {s d : object C} (m : morphism C s d):
+    forall(cn : Cone Gr),
+      preComposeCone (pointwiseCone d cn) (cn_top cn _1 m)
+      = extendPointwiseCone m (pointwiseCone s cn).
+  Proof.
+    intro cn; srapply path_Cone; [ reflexivity | ]; simpl.
+    intro n. apply (commutes (cn_side cn n)).
+  Defined.
+
+  Definition makePointwiseLimit : (forall x : object C, Limit (pointwiseGraph x)) -> Limit Gr.
+  Proof.
+    intro pointLim. srapply mkLim; [ exact (makePointwiseCone pointLim) | | ].
+    - intro cn. srapply mkCnMph; [ srapply Build_NaturalTransformation | ].
+      + intro c; simpl. exact (cnmph_mph (lim_ex (pointLim c) (pointwiseCone c cn))).
+      + intros s d m; simpl.
+        change (cnmph_mph (lim_ex (pointLim d) (extendPointwiseCone m (lim_cone (pointLim s))))
+                o cnmph_mph (lim_ex (pointLim s) (pointwiseCone s cn)))
+          with (cnmph_mph (CnMphComp
+                             (lim_ex (pointLim d) (extendPointwiseCone m (lim_cone (pointLim s))))
+                             (extendPointwiseCone_F m _1 (lim_ex (pointLim s) (pointwiseCone s cn))))).
+        change (cnmph_mph (lim_ex (pointLim d) (pointwiseCone d cn)) o (cn_top cn) _1 m)
+          with (cnmph_mph (CnMphComp
+                             (lim_ex (pointLim d) (pointwiseCone d cn))
+                             (preComposeConeProj (pointwiseCone d cn) (cn_top cn _1 m)))).
+        rewrite <- (lim_uniq_p
+                     _
+                     (commutesPreCompose m cn)
+                     (pointLim d)
+                     (CnMphComp (lim_ex (pointLim d) (pointwiseCone d cn))
+                                (preComposeConeProj (pointwiseCone d cn) (cn_top cn _1 m)))
+                     _).
+        unfold commutesPreCompose; rewrite path_Cone_top; simpl. reflexivity.
+      + intro n; apply path_natural_transformation; intro c; simpl.
+        apply (cnmph_comm (lim_ex (pointLim c) (pointwiseCone c cn))).
+    - intros cn m1 m2; apply path_natural_transformation; intro c.
+      pose (mph1 := pointwiseConeMorphism' c m1). pose (mph2 := pointwiseConeMorphism' c m2).
+      apply (lim_uniq (pointLim c) _ mph1 mph2).
+  Defined.
 End GraphOfFunctor.
+
+Theorem functorLimitIsFunctorOfLimits `{Funext} {C D : PreCategory} {Size Arrows : Type} :
+  forall(Gr : Graph (C -> D) Size Arrows),
+  forall(pointLim : forall x : C, Limit (pointwiseGraph Gr x)),
+    exists(L : Limit Gr), forall x : C, pointwiseCone x (lim_cone L) = lim_cone (pointLim x).
+Proof.
+  intros Gr pointLim. exists(makePointwiseLimit pointLim). intro x.
+  unfold makePointwiseLimit; simpl. apply makePointwiseConeSection.
+Qed.

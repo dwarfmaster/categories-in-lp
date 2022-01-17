@@ -86,4 +86,13 @@ Section ConeCategory.
   Proof.
     srapply Build_Functor; [ exact cn_top | intros s d; exact cnmph_mph | | ]; intros; reflexivity.
   Defined.
+
+  Definition preComposeCone {x : object C} (cn : Cone Gr) (f : morphism C x (cn_top cn)) : Cone Gr.
+  Proof.
+    srapply mkCone; [ exact x | exact (fun n => cn_side cn n o f) | ].
+    intro a; simpl. rewrite <- associativity. rewrite (cn_comm cn). reflexivity.
+  Defined.
+  Definition preComposeConeProj {x : object C} (cn : Cone Gr) (f : morphism C x (cn_top cn)) :
+    ConeMorphism (preComposeCone cn f) cn.
+  Proof. srapply mkCnMph; [ exact f | intro n; reflexivity ]. Defined.
 End ConeCategory.
