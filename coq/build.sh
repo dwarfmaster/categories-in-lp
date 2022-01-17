@@ -4,6 +4,7 @@ export FILES=(\
   Misc.v \
   Limits/Graph.v \
   Limits/ConeCat.v \
+  Limits/GraphOfFunctors.v \
   Limits/Functor.v \
   Limits/Equalizer.v \
   Limits/Product.v \
