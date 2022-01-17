@@ -67,7 +67,7 @@ Section paths.
     assert ( cn_comm0 = cn_comm1 ) as pcomm.
     { apply path_forall; intro a. apply hset_has_UIP. apply trunc_morphism. }
     destruct pcomm. reflexivity.
-  Qed.
+  Defined.
   Lemma path_Cone (c1 c2 : Cone G) :
     forall(ptop : cn_top c1 = cn_top c2),
       (forall(n : Size),
@@ -79,5 +79,41 @@ Section paths.
     generalize dependent cn_comm1. generalize dependent cn_comm0.
     generalize dependent cn_side1. generalize dependent cn_side0.
     destruct ptop. intros; simpl. reflexivity.
+  Defined.
+  Lemma path_Cone_top' (c1 c2 : Cone G) :
+    forall(ptop : cn_top c1 = cn_top c2),
+    forall(pside : transport (fun X => forall(n : Size), morphism C X (gr_vertex G n)) ptop (cn_side c1)
+              = cn_side c2),
+      ap cn_top (path_Cone' c1 c2 ptop pside) = ptop.
+  Proof.
+    intros ptop pside. destruct c1, c2; simpl in *.
+    destruct ptop, pside; simpl in *.
+    destruct (path_forall cn_comm0 cn_comm1
+                          (fun a => hset_has_UIP (trunc_morphism C cn_top0 (gr_dst' G a))
+                                              (gr_edge G a o cn_side0 (gr_src G a))
+                                              (cn_side0 (gr_dst G a))
+                                              (cn_comm0 a) (cn_comm1 a))).
+    reflexivity.
+  Qed.
+  Lemma path_Cone_top (c1 c2 : Cone G) :
+    forall(ptop : cn_top c1 = cn_top c2),
+    forall(pside : forall(n : Size),
+         transport (fun X => morphism C X (gr_vertex G n)) ptop (cn_side c1 n)
+         = cn_side c2 n),
+      ap cn_top (path_Cone c1 c2 ptop pside) = ptop.
+  Proof.
+    intros ptop pside. unfold path_Cone. simpl.
+    rewrite path_Cone_top'. reflexivity.
+  Qed.
+
+  Lemma lim_uniq_p {cn1 cn2 : Cone G} (p : cn1 = cn2) (L : Limit G)
+        (mph1 : ConeMorphism cn1 (lim_cone L)) (mph2 : ConeMorphism cn2 (lim_cone L)) :
+    transport
+      (fun X => morphism C X (cn_top (lim_cone L)))
+      (ap cn_top p)
+      (cnmph_mph mph1)
+    = cnmph_mph mph2.
+  Proof.
+    generalize dependent mph2; destruct p; intro mph2. simpl. apply lim_uniq.
   Qed.
 End paths.
