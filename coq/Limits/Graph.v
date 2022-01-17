@@ -2,6 +2,8 @@
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
 From HoTT Require Import Spaces.Finite.
+From HoTT Require Import Types.Forall.
+From HoTT Require Import Types.Sigma.
 Require Import Misc.
 
 Local Open Scope morphism_scope.
@@ -49,3 +51,33 @@ Arguments Limit {C Size Arrows} G.
 
 Definition HasFiniteLimits (C : PreCategory) :=
   forall(size arrows : nat), forall(G : Graph C (Fin size) (Fin arrows)), Limit G.
+
+Section paths.
+  Context `{Funext}.
+  Context {C : PreCategory}.
+  Context {Size Arrows : Type}.
+  Context (G : Graph C Size Arrows).
+
+  Lemma path_Cone' (c1 c2 : Cone G) :
+    forall(ptop : cn_top c1 = cn_top c2),
+      (transport (fun X => forall(n : Size), morphism C X (gr_vertex G n)) ptop (cn_side c1) = cn_side c2) ->
+      c1 = c2.
+  Proof.
+    destruct c1, c2; simpl. intros; path_induction; simpl; simpl in cn_comm1.
+    assert ( cn_comm0 = cn_comm1 ) as pcomm.
+    { apply path_forall; intro a. apply hset_has_UIP. apply trunc_morphism. }
+    destruct pcomm. reflexivity.
+  Qed.
+  Lemma path_Cone (c1 c2 : Cone G) :
+    forall(ptop : cn_top c1 = cn_top c2),
+      (forall(n : Size),
+          transport (fun X => morphism C X (gr_vertex G n)) ptop (cn_side c1 n) = cn_side c2 n) ->
+      c1 = c2.
+  Proof.
+    intros ptop pside. apply (path_Cone' _ _ ptop). apply path_forall; intro n.
+    rewrite <- pside; simpl. destruct c1, c2; simpl. simpl in ptop.
+    generalize dependent cn_comm1. generalize dependent cn_comm0.
+    generalize dependent cn_side1. generalize dependent cn_side0.
+    destruct ptop. intros; simpl. reflexivity.
+  Qed.
+End paths.
