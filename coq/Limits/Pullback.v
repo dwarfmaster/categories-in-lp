@@ -1,5 +1,6 @@
 
 From HoTT Require Import Basics.
+From HoTT Require Import HSet.
 From HoTT Require Import Categories.
 From HoTT Require Import Spaces.Finite.
 Require Import Misc.
@@ -7,6 +8,7 @@ Require Import Limits.Graph.
 Require Import Limits.Product.
 Require Import Limits.Terminal.
 Require Import Limits.Equalizer.
+Require Import Limits.GraphOfFunctors.
 
 Local Open Scope morphism_scope.
 
@@ -109,6 +111,21 @@ Arguments Pullback {C a b c} f g.
 
 Definition AllPullbacks (C : PreCategory) :=
   forall(a b c : object C), forall(f : morphism C a c), forall(g : morphism C b c), Pullback f g.
+
+Theorem pointwisePullback `{Funext} {C D : PreCategory} {F G L : Functor C D} :
+  forall(theta : NaturalTransformation F L),
+  forall(tau : NaturalTransformation G L),
+  forall(x : C),
+    pointwiseGraph (@PullbackGr (functor_category C D) F G L theta tau) x
+    = PullbackGr (theta x) (tau x).
+Proof.
+  intros. srapply path_Graph; unfold pointwiseGraph; unfold PullbackGr; simpl.
+  - apply path_forall; intro s; destruct3 s; reflexivity.
+  - intro a; destruct2 a; reflexivity.
+  - intro a; destruct2 a; reflexivity.
+  - intro a; destruct2 a; simpl; rewrite transport_idmap_ap;
+      rewrite (ap_funext2 (fun V1 V2 => morphism D V1 V2)); reflexivity.
+Qed.
 
 Section PullbackEqualizer.
   Context {C : PreCategory}.

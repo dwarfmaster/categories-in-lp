@@ -212,3 +212,4 @@ Proof.
   intros Gr pointLim. exists(makePointwiseLimit pointLim). intro x.
   unfold makePointwiseLimit; simpl. apply makePointwiseConeSection.
 Qed.
+Arguments functorLimitIsFunctorOfLimits {H C D Size Arrows} (Gr pointLim).
