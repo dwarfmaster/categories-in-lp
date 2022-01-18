@@ -112,20 +112,55 @@ Arguments Pullback {C a b c} f g.
 Definition AllPullbacks (C : PreCategory) :=
   forall(a b c : object C), forall(f : morphism C a c), forall(g : morphism C b c), Pullback f g.
 
-Theorem pointwisePullback `{Funext} {C D : PreCategory} {F G L : Functor C D} :
-  forall(theta : NaturalTransformation F L),
-  forall(tau : NaturalTransformation G L),
-  forall(x : C),
-    pointwiseGraph (@PullbackGr (functor_category C D) F G L theta tau) x
-    = PullbackGr (theta x) (tau x).
-Proof.
-  intros. srapply path_Graph; unfold pointwiseGraph; unfold PullbackGr; simpl.
-  - apply path_forall; intro s; destruct3 s; reflexivity.
-  - intro a; destruct2 a; reflexivity.
-  - intro a; destruct2 a; reflexivity.
-  - intro a; destruct2 a; simpl; rewrite transport_idmap_ap;
-      rewrite (ap_funext2 (fun V1 V2 => morphism D V1 V2)); reflexivity.
-Qed.
+Section pointwisePullback.
+  Context `{Funext}.
+  Context {C D : PreCategory}.
+  Context {F G L : Functor C D}.
+  Context (theta : NaturalTransformation F L).
+  Context (tau   : NaturalTransformation G L).
+  Context (x : C).
+  Let Gr := pointwiseGraph (@PullbackGr (functor_category C D) F G L theta tau) x.
+
+  Definition pwPbCone : Cone (PullbackGr (theta x) (tau x)) -> Cone Gr.
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | | ].
+    - intro n; pose (m := n); destruct3 n; exact (cn_side cn m).
+    - intro n; pose (m := n); destruct2 n; exact (cn_comm cn m).
+  Defined.
+  Definition pwPbCone' : Cone Gr -> Cone (PullbackGr (theta x) (tau x)).
+  Proof.
+    intro cn. srapply mkCone; [ exact (cn_top cn) | | ].
+    - intro n; pose (m := n); destruct3 n; exact (cn_side cn m).
+    - intro n; pose (m := n); destruct2 n; exact (cn_comm cn m).
+  Defined.
+
+  Definition pwPbConeMorphismLToR (c1 : Cone Gr) (c2 : Cone (PullbackGr (theta x) (tau x))) :
+    ConeMorphism (pwPbCone' c1) c2 ->
+    ConeMorphism c1 (pwPbCone c2).
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | ].
+    intro n; pose (m := n); destruct3 n; exact (cnmph_comm mph m).
+  Defined.
+  Definition pwPbConeMorphismRToL (c1 : Cone Gr) (c2 : Cone (PullbackGr (theta x) (tau x))) :
+    ConeMorphism c1 (pwPbCone c2) ->
+    ConeMorphism (pwPbCone' c1) c2.
+  Proof.
+    intro mph. srapply mkCnMph; [ exact (cnmph_mph mph) | ].
+    intro n; pose (m := n); destruct3 n; exact (cnmph_comm mph m).
+  Defined.
+
+  Theorem pointwisePullback :
+      Limit (PullbackGr (theta x) (tau x)) ->
+      Limit (pointwiseGraph (@PullbackGr (functor_category C D) F G L theta tau) x).
+  Proof.
+    intro P. srapply mkLim.
+    - apply pwPbCone. exact (lim_cone P).
+    - intro c. apply pwPbConeMorphismLToR. apply lim_ex.
+    - intros c m1 m2.
+      pose (mph1 := pwPbConeMorphismRToL _ _ m1). pose (mph2 := pwPbConeMorphismRToL _ _ m2).
+      apply (lim_uniq P _ mph1 mph2).
+  Qed.
+End pointwisePullback.
 
 Section PullbackEqualizer.
   Context {C : PreCategory}.
