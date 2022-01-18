@@ -4,6 +4,7 @@ From HoTT Require Import Categories.
 From HoTT Require Import Categories.Category.Morphisms.
 From HoTT Require Import Spaces.Finite.
 From HoTT Require Import Types.Equiv.
+From HoTT Require Import Types.Forall.
 From HoTT Require Import Types.Sigma.
 
 Definition fin1 : Fin 2 := inr tt.
@@ -111,6 +112,31 @@ Fixpoint get {A : Type} (n : nat) : Vect A n -> Fin n -> A :=
 Definition UIP (A : Type) := forall(x y : A), forall(p p' : x = y), p = p'.
 Theorem hset_has_UIP {A : Type}: IsHSet A -> UIP A.
 Proof. intros H x y p p'. destruct (H x y p p'). exact center. Qed.
+Theorem transport_in_hset {A : Type} (S : IsHSet A) {P : A -> Type} (x : A) (p : x = x) (w : P x) :
+  transport P p w = w.
+Proof.
+  assert (p = 1) as Hp by (apply hset_has_UIP; assumption).
+  rewrite Hp. reflexivity.
+Qed.
+
+
+(*  _____                      _    *)
+(* |  ___|   _ _ __   _____  _| |_  *)
+(* | |_ | | | | '_ \ / _ \ \/ / __| *)
+(* |  _|| |_| | | | |  __/>  <| |_  *)
+(* |_|   \__,_|_| |_|\___/_/\_\\__| *)
+
+Theorem ap_funext `{Funext} {A B : Type} (P : B -> Type) (f g : A -> B) (p : f == g) (x : A) :
+  ap (fun h => P (h x)) (path_forall f g p) = ap P (p x).
+Proof. rewrite ap_compose'. f_ap. rewrite (ap_apply_lD _ x). f_ap. apply eisretr. Qed.
+Theorem ap_funext2' {A B : Type} (P : B -> B -> Type) (f g : A -> B) (p : f = g) (x y : A) :
+  ap (fun h => P (h x) (h y)) p
+  = ap (fun b1 => P b1 (f y)) (apD10 p x) @ ap (fun b2 => P (g x) b2) (apD10 p y).
+Proof. destruct p. reflexivity. Qed.
+Theorem ap_funext2 `{Funext} {A B : Type} (P : B -> B -> Type) (f g : A -> B) (p : f == g) (x y : A) :
+  ap (fun h => P (h x) (h y)) (path_forall f g p)
+  = ap (fun b1 => P b1 (f y)) (p x) @ ap (fun b2 => P (g x) b2) (p y).
+Proof. rewrite ap_funext2'. rewrite eisretr. reflexivity. Qed.
 
 (*  _____            _        *)
 (* | ____|__ _ _   _(_)_   __ *)
