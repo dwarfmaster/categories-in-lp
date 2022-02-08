@@ -159,7 +159,7 @@ Section pointwisePullback.
     - intros c m1 m2.
       pose (mph1 := pwPbConeMorphismRToL _ _ m1). pose (mph2 := pwPbConeMorphismRToL _ _ m2).
       apply (lim_uniq P _ mph1 mph2).
-  Qed.
+  Defined.
 End pointwisePullback.
 
 Section PullbackEqualizer.

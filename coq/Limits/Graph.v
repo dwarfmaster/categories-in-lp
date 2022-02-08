@@ -160,3 +160,27 @@ Section paths.
     generalize dependent mph2; destruct p; intro mph2. simpl. apply lim_uniq.
   Qed.
 End paths.
+
+Section helpers.
+  Context {C : PreCategory}.
+  Context {Size Arrows : Type}.
+  Context {G : Graph C Size Arrows}.
+  Context (L : Limit G).
+
+  Definition IsConeMorphism (c1 c2 : Cone G) (f : morphism C (cn_top c1) (cn_top c2)) :=
+    forall(n : Size), cn_side c2 n o f = cn_side c1 n.
+  Lemma lim_mph_uniq (cn : Cone G) (f g : morphism C (cn_top cn) (cn_top (lim_cone L))) :
+    IsConeMorphism cn (lim_cone L) f -> IsConeMorphism cn (lim_cone L) g -> f = g.
+  Proof.
+    intros Hf Hg. pose (mphf := mkCnMph _ _ _ G cn (lim_cone L) f Hf).
+    pose (mphg := mkCnMph _ _ _ G cn (lim_cone L) g Hg).
+    change f with (cnmph_mph mphf). change g with (cnmph_mph mphg).
+    apply lim_uniq.
+  Qed.
+  Lemma lim_ex_uniq (cn : Cone G) (f : morphism C (cn_top cn) (cn_top (lim_cone L))) :
+    IsConeMorphism cn (lim_cone L) f -> cnmph_mph (lim_ex L cn) = f.
+  Proof.
+    intro Hf. apply lim_mph_uniq; [ | assumption ]. exact (cnmph_comm (lim_ex L cn)).
+  Qed.
+
+End helpers.

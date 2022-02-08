@@ -1,6 +1,7 @@
 
 From HoTT Require Import Basics.
 From HoTT Require Import Categories.
+From HoTT Require Import Categories.Functor.Paths.
 From HoTT Require Import Categories.Category.Morphisms.
 From HoTT Require Import Categories.Comma.
 From HoTT Require Import Spaces.Finite.
@@ -10,6 +11,7 @@ From HoTT Require Import Categories.Adjoint.Hom.
 From HoTT Require Import Categories.Adjoint.HomCoercions.
 Require Import Misc.
 Require Import Limits.Graph.
+Require Import Limits.GraphOfFunctors.
 Require Import Limits.Product.
 Require Import Limits.Terminal.
 Require Import Limits.Pullback.
@@ -44,7 +46,6 @@ Module DependentProduct.
 
     Context {X Y : object C}.
     Context (f : morphism C X Y).
-    Print LCCHasLocalPullbacks.
     Let P : AllPullbacks (C/Y) := LCCHasLocalPullbacks LCC Y.
 
     Definition FToP {E : object C} (p : morphism C E X) :
@@ -239,7 +240,6 @@ Module DependentProduct.
 
     Section DPAdjunctionPointwise.
       Context (p : object (C/X)) (m : object (C/Y)).
-      Print Product.
       Let fob := Build_SliceObject f.
       Let fpob := Build_SliceObject (f o Slice.f p).
       Definition mXf : Product fob m := snd (LCC Y) fob m.
@@ -255,7 +255,7 @@ Module DependentProduct.
       Definition mTOdpp : object set_cat := Build_HSet (morphism (C/Y) m (DP _0 p)%object).
 
       Lemma ProductIsBaseChangeDiagonal :
-          Slice.f (prod_obj mXf) = f o (Slice.f (BC _0 m)).
+        Slice.f (prod_obj mXf) = f o (Slice.f (BC _0 m)).
       Proof.
         simpl. change f with (Slice.f fob). change DependentProduct.fob with fob.
         rewrite (slice_m_comm (pi1 (snd (LCC Y) fob m))). reflexivity.
@@ -332,10 +332,10 @@ Module DependentProduct.
         - apply path_forall; intro mslice. unfold isoCurry.
           simpl (@compose set_cat). cbn beta.
           change ((curry_mph m (LCCC over fob))^-1
-                     (curry_mph m (LCCC over fob)
-                       (mslice o prod_swap_mph (snd (LCC Y) m fob) mXf)))
+                                               (curry_mph m (LCCC over fob)
+                                                          (mslice o prod_swap_mph (snd (LCC Y) m fob) mXf)))
             with (((curry_mph m (LCCC over fob))^-1 o curry_mph m (LCCC over fob))
-                   (mslice o prod_swap_mph (snd (LCC Y) m fob) mXf)).
+                  (mslice o prod_swap_mph (snd (LCC Y) m fob) mXf)).
           rewrite left_inverse. simpl (@identity set_cat). cbn beta.
           rewrite associativity. rewrite prod_swap_invo. apply right_identity.
       Qed.
@@ -356,11 +356,11 @@ Module DependentProduct.
         unfold p_post; unfold HomM; unfold m1.
         change (((covariant_hom_functor (C / Y) m)
                  _1 (curry FToF
-                   (Build_SliceMorphism (Build_SliceObject (f o Slice.f p)) (Build_SliceObject f)
-                      (Slice.f p) 1 o ev (FToP (Slice.f p))))) mslice)
+                           (Build_SliceMorphism (Build_SliceObject (f o Slice.f p)) (Build_SliceObject f)
+                                                (Slice.f p) 1 o ev (FToP (Slice.f p))))) mslice)
           with (curry FToF
-                   (Build_SliceMorphism (Build_SliceObject (f o Slice.f p)) (Build_SliceObject f)
-                      (Slice.f p) 1 o ev (FToP (Slice.f p))) o mslice o 1).
+                      (Build_SliceMorphism (Build_SliceObject (f o Slice.f p)) (Build_SliceObject f)
+                                           (Slice.f p) 1 o ev (FToP (Slice.f p))) o mslice o 1).
         rewrite right_identity. repeat rewrite <- associativity.
         unfold isoBottom; unfold isoCurry. simpl _^-1. unfold curry_inv_mph.
         unfold curry_inv. rewrite composition_of. rewrite <- associativity.
@@ -483,6 +483,92 @@ Module DependentProduct.
         apply LimitFromAlt. unfold AltHomSetGr. apply CovariantHomPreservesLimit. exact (Pb p).
       Defined.
     End DPAdjunctionPointwise.
+
+    Section DPAdjunctionHom.
+      Let BCHomFunctor := (HomFunctor.hom_functor (C / X) o (BC^op, 1))%functor.
+      Let DPHomFunctor := (HomFunctor.hom_functor (C / Y) o (1, DependentProduct))%functor.
+
+      (* Context (p : object (C/X)) (m : object (C/Y)). *)
+      Let fob := Build_SliceObject f.
+      Definition fpobF : Functor (C/X) (C/Y).
+      Proof.
+        srapply Build_Functor; [ intro p; exact (Build_SliceObject (f o Slice.f p)) | | | ].
+        - intros s d m; simpl. srapply Build_SliceMorphism; [ exact (Slice.m m) | ].
+          simpl. rewrite associativity. rewrite slice_m_comm. reflexivity.
+        - intros s d d' m3 m4; apply slice_m_injective; reflexivity.
+        - intro x; apply slice_m_injective; reflexivity.
+      Defined.
+      Definition mXfF : Functor (C/Y)^op (C/Y)^op := (ProdLFunctor fob (snd (LCC Y) fob))^op.
+      Definition mXfTOfopF : Functor ((C/Y)^op * (C/X)) set_cat :=
+        HomFunctor.hom_functor (C/Y) o (mXfF, fpobF).
+      Definition mXfTOfF : Functor ((C/Y)^op * (C/X)) set_cat :=
+        HomFunctor.hom_functor (C/Y) o (mXfF, diagonal_functor' (C/Y) (C/X) fob).
+      Definition mTOidF : Functor ((C/Y)^op * (C/X)) set_cat :=
+        HomFunctor.hom_functor (C/Y) o (1, diagonal_functor' (C/Y) (C/X) (Build_SliceObject 1)).
+
+
+      Definition p_post_nat : NaturalTransformation mXfTOfopF mXfTOfF.
+      Proof.
+        srapply Build_NaturalTransformation.
+        - intros [ m p ]. exact (@p_post p m).
+        - intros s d [ mY mX ]; unfold p_post; apply path_forall;
+            intro g; simpl (@compose set_cat); cbn beta.
+          change ((mXfTOfopF _1 (mY,mX)) g) with (fpobF _1 mX o g o mXfF _1 mY).
+          change ((mXfTOfF _1 (mY,mX)) _)
+            with (1 o (Build_SliceMorphism (fpobF _0 (snd s)) fob
+                                           (Slice.f (snd s)) 1 o g) o mXfF _1 mY).
+          rewrite left_identity. repeat rewrite <- associativity. f_ap. f_ap.
+          apply slice_m_injective; rewrite slice_m_comp; simpl. apply slice_m_comm.
+      Defined.
+      Definition pi_m_const_nat : NaturalTransformation mTOidF mXfTOfF.
+      Proof.
+        srapply Build_NaturalTransformation.
+        - intros [ m p ]. exact (@pi_m_const m).
+        - intros s d [ mY mX ]; unfold pi_m_const; apply path_forall;
+            intro g; simpl (@compose set_cat); cbn beta.
+          change ((mXfTOfF _1 (mY,mX)) _)
+            with (1 o (pi1 (snd (LCC Y) fob (fst s))) o mXfF _1 mY).
+          rewrite left_identity. rewrite ProdLFunctorPi1. reflexivity.
+      Defined.
+
+      Definition HomSetFGr :=
+        @PullbackGr (functor_category ((C/Y)^op * (C/X)) set_cat) _ _ _ p_post_nat pi_m_const_nat.
+
+      Definition HomSetFGrLimBC : Limit HomSetFGr.
+      Proof.
+        apply makePointwiseLimit. intros [ m p ].
+        unfold HomSetFGr. apply pointwisePullback.
+        change (p_post_nat (m,p)) with (@p_post p m).
+        change (pi_m_const_nat (m,p)) with (@pi_m_const m). apply bcmLimit.
+      Defined.
+      Lemma HomSetFGrLimBC_value : cn_top (lim_cone HomSetFGrLimBC) = BCHomFunctor.
+      Proof.
+        srapply path_functor; [ reflexivity | ].
+        apply path_forall. intros [ s_m s_p ]. apply path_forall. intros [ d_m d_p ].
+        apply path_forall. intros m.
+        change (transport _ 1 _) with (Core.morphism_of (cn_top (lim_cone HomSetFGrLimBC))).
+        unfold HomSetFGrLimBC. unfold BCHomFunctor.
+        pose (pointLim :=
+                fun x : ((C / Y)^op * (C / X))%category =>
+                  pointwisePullback p_post_nat pi_m_const_nat
+                                    (fst x, snd x) (bcmLimit (snd x) (fst x))).
+        change (cn_top (lim_cone (makePointwiseLimit _)))
+          with (makePointwiseFunctor pointLim).
+        change (Core.morphism_of (makePointwiseFunctor _))
+          with (fun s d m => cnmph_mph (lim_ex (pointLim d)
+                                            (extendPointwiseCone m (lim_cone (pointLim s))))).
+        cbn beta. apply (lim_ex_uniq (pointLim (d_m, d_p))
+                                     (extendPointwiseCone m (lim_cone (pointLim (s_m,s_p))))).
+        unfold IsConeMorphism. intro n. apply path_forall; intro g.
+        destruct m as [ m_m m_p ]. simpl (@compose set_cat). cbn beta.
+        change (((HomFunctor.hom_functor (C/X) o (BC^op, 1)) _1 (m_m, m_p)) g)
+          with (m_p o g o BC _1 m_m).
+        destruct n as [ [ [ [] | [] ] | [] ] | [] ].
+        - change (cn_side (lim_cone (pointLim (d_m,d_p))) (inl (inl (inr tt))))
+            with
+
+
+    End DPAdjunctionHom.
 
     Theorem DPAdjunction : BC -| DependentProduct.
     Proof.
