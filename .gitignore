@@ -1,2 +1,4 @@
 
 *.lpo
+diagrams-alg/cpp/bazel*
+.ccls-cache
