@@ -20,6 +20,20 @@ nixpkgs_git_repository(
     sha256 = "c77bb41cf5dd82f4718fa789d49363f512bb6fa6bc25f8d60902fe2d698ed7cc"
 )
 
+# Import and load bazel rules to generate a compile_commands.json
+# https://github.com/hedronvision/bazel-compile-commands-extractor
+http_archive(
+    name = "hedron_compile_commands",
+    url = "https://github.com/hedronvision/bazel-compile-commands-extractor/archive/066b29fba13750ca9c9e0d1e1ba075577a399a68.tar.gz",
+    strip_prefix = "bazel-compile-commands-extractor-066b29fba13750ca9c9e0d1e1ba075577a399a68",
+    sha256 = "64b96599a3b9d8293e9e534f8231919ed15af6fdfdfc46979ac69f2078bec71f",
+)
+load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
+hedron_compile_commands_setup()
+# Re-generate the file by running:
+# $ bazel run @hedron_compile_commands//:refresh_all
+
+# Find Eigen in nixpkgs
 nixpkgs_package(
     name = "eigen",
     repositories = { "nixpkgs": "@nixpkgs//:default.nix" },

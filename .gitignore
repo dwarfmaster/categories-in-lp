@@ -1,4 +1,6 @@
 
 *.lpo
 diagrams-alg/cpp/bazel*
-.ccls-cache
+diagrams-alg/cpp/external
+diagrams-alg/cpp/.ccls*
+diagrams-alg/cpp/.project*
