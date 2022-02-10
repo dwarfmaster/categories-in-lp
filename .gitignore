@@ -4,3 +4,4 @@ diagrams-alg/cpp/bazel*
 diagrams-alg/cpp/external
 diagrams-alg/cpp/.ccls*
 diagrams-alg/cpp/.project*
+diagrams-alg/cpp/compile_commands.json
