@@ -8,6 +8,7 @@ class EqType {
 
     public:
         EqType(bool bl) : b(bl) {}
+        EqType() : b(false) {}
         operator bool() const { return b; }
 
         // The real operators
