@@ -49,10 +49,16 @@ struct Diagram {
     }
 };
 
+unsigned path_dst(const Path& p) {
+    if(p.arrows.empty()) return p.src;
+    else return p.diag->edges[p.arrows.back()].dst;
+}
+
 Path subpath(const Path& p, unsigned start, unsigned end) {
     assert(start < end);
     assert(end <= p.arrows.size());
     Path ret;
+    ret.diag = p.diag;
     if(start == 0) ret.src = p.src;
     else           ret.src = p.diag->edges[p.arrows[start]].src;
     ret.arrows = std::vector<unsigned>(p.arrows.begin() + start, p.arrows.begin() + end);
@@ -68,7 +74,9 @@ Path path_suffix(const Path& p, unsigned start) {
 }
 
 Path path_concat(const Path& p1, const Path& p2) {
+    assert(p1.diag == p2.diag);
     Path result;
+    result.diag = p1.diag;
     result.src = p1.src;
     result.arrows.resize(p1.arrows.size() + p2.arrows.size());
     auto it = std::copy(p1.arrows.begin(), p1.arrows.end(), result.arrows.begin());
@@ -124,6 +132,9 @@ class PathView {
 };
 
 void addEq(Diagram& d, const Path& p1, const Path& p2) {
+    assert(p1.diag == std::addressof(d));
+    assert(p2.diag == std::addressof(d));
+    assert(path_dst(p1) == p2.src);
     d.faces.push_back(std::make_pair(p1, p2));
 }
 void addEq(Diagram& d, Path&& p1, Path&& p2) {
@@ -245,10 +256,7 @@ void fastpow_into(T& base, T x, unsigned pow) {
     }
 }
 
-void transitivelyCloseCache(CommutationCache& cache) {
-    fastpow_into(cache.comm_mat, cache.comm_mat, cache.d.nb_nodes);
-}
-
+// TODO doesn't work
 void contextCloseCache(CommutationCache& cache) {
     CommutationCache::EqMat result = cache.comm_mat;
 
@@ -266,12 +274,14 @@ void contextCloseCache(CommutationCache& cache) {
                     suffix_end = SparseMatrixInnerIterator<EqType>::makeEnd(cache.comm_mat, suffix);
                   suffix_it != suffix_end; ++suffix_it) {
                     if(*suffix_it != EqType(true)) continue;
-                    Path rpath = path_concat(cache.all_paths[suffix_it.inner()], cache.all_paths[suffix_it.inner()]);
+                    if(prefix_it.inner() == prefix && suffix_it.inner() == suffix) continue;
+                    Path rpath = path_concat(cache.all_paths[prefix_it.inner()], cache.all_paths[suffix_it.inner()]);
                     unsigned rpath_id = cache.path_ids[rpath];
-                    if(!isSparseMatrixNullAt<EqType>(cache.comm_mat, p, rpath_id)) {
-                      result.insert(p, rpath_id) = EqType(true);
-                      result.insert(rpath_id, p) = EqType(true);
+                    if(result.coeff(p, rpath_id) == EqType(false)) {
+                        result.insert(p, rpath_id) = EqType(true);
+                        result.insert(rpath_id, p) = EqType(true);
                     }
+                    assert(result.coeff(p, rpath_id) == EqType(true));
                 }
             }
         }
@@ -279,6 +289,17 @@ void contextCloseCache(CommutationCache& cache) {
 
     result.makeCompressed();
     cache.comm_mat = result;
+}
+
+void transitivelyCloseCache(CommutationCache& cache) {
+    fastpow_into(cache.comm_mat, cache.comm_mat, cache.d.nb_nodes);
+}
+
+void closeCache(CommutationCache& cache) {
+    for(unsigned i = 0; i < cache.d.nb_nodes; ++i) {
+        cache.comm_mat = cache.comm_mat * cache.comm_mat;
+        contextCloseCache(cache);
+    }
 }
 
 int main(int, char**) {
@@ -294,8 +315,8 @@ int main(int, char**) {
     d.edges.push_back(Arrow(4, 0, "uniq")); // 7
     addEq(d, mkPath(d, 2), mkPath2(d, 3, 1));
     addEq(d, mkPath(d, 2), mkPath2(d, 5, 0));
-    addEq(d, mkPath(d, 7), mkPath2(d, 4, 1));
-    addEq(d, mkPath(d, 7), mkPath2(d, 5, 0));
+    addEq(d, mkPath(d, 4), mkPath2(d, 7, 3));
+    addEq(d, mkPath(d, 6), mkPath2(d, 7, 5));
 
     auto start_time = std::chrono::high_resolution_clock::now();
     CommutationCache cache = mkCmCache(d, 2);

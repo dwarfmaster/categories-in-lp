@@ -183,6 +183,7 @@ class SparseMatrixInnerIterator {
 
         SparseMatrixInnerIterator& operator++() {
             ++actual_;
+            ++index_;
             return *this;
         }
         SparseMatrixInnerIterator operator++(int) {
@@ -198,15 +199,5 @@ class SparseMatrixInnerIterator {
             return a.actual_ != b.actual_;
         }
 };
-
-template <typename Scalar>
-bool isSparseMatrixNullAt(const Eigen::SparseMatrix<Scalar>& matrix, unsigned outer, unsigned inner) {
-    SparseMatrixInnerIterator<Scalar> it(matrix, outer);
-    auto end = SparseMatrixInnerIterator<Scalar>::makeEnd(matrix, outer);
-    for(; it != end; ++it) {
-        if(it.inner() == inner) return false;
-    }
-    return true;
-}
 
 #endif // DEF_SPARSE_MATRIX_ITERATOR
