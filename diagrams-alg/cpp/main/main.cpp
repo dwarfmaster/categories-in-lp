@@ -2,9 +2,12 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <span>
+#include <chrono>
 #include <Eigen/Sparse>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 
 #include "eq_type.hpp"
 #include "sparse_matrix_iterator.hpp"
@@ -15,7 +18,10 @@ struct Arrow {
     Arrow(unsigned s, unsigned d, const std::string& n) : src(s), dst(d), name(n) {}
 };
 
+struct Diagram;
+
 struct Path {
+    const Diagram* diag;
     unsigned src;
     std::vector<unsigned> arrows;
 
@@ -43,6 +49,80 @@ struct Diagram {
     }
 };
 
+Path subpath(const Path& p, unsigned start, unsigned end) {
+    assert(start < end);
+    assert(end <= p.arrows.size());
+    Path ret;
+    if(start == 0) ret.src = p.src;
+    else           ret.src = p.diag->edges[p.arrows[start]].src;
+    ret.arrows = std::vector<unsigned>(p.arrows.begin() + start, p.arrows.begin() + end);
+    return ret;
+}
+
+Path path_prefix(const Path& p, unsigned end) {
+    return subpath(p, 0, end);
+}
+
+Path path_suffix(const Path& p, unsigned start) {
+    return subpath(p, start, p.arrows.size());
+}
+
+Path path_concat(const Path& p1, const Path& p2) {
+    Path result;
+    result.src = p1.src;
+    result.arrows.resize(p1.arrows.size() + p2.arrows.size());
+    auto it = std::copy(p1.arrows.begin(), p1.arrows.end(), result.arrows.begin());
+    std::copy(p2.arrows.begin(), p2.arrows.end(), it);
+    return result;
+}
+
+std::ostream& operator<<(std::ostream& os, const Path p) {
+    if(p.arrows.empty()) {
+        os << "id_" << p.src << "\n";
+        return os;
+    }
+    for(auto it = p.arrows.rbegin(), end = p.arrows.rend(); it != end; ++it) {
+        os << p.diag->edges[*it].name;
+        if(it + 1 != end) std::cout << " o ";
+    }
+    return os;
+}
+
+// TODO understand how to make heterogeneous lookup work
+class PathView {
+    unsigned src_;
+    absl::Span<const unsigned> arrows_view_;
+
+    public:
+        PathView(const Path& p, unsigned start, unsigned end) {
+            assert(end <= p.arrows.size());
+            assert(start < end);
+            if(start == 0) src_ = p.src;
+            else           src_ = p.diag->edges[p.arrows[start]].src;
+            arrows_view_ = absl::MakeSpan(p.arrows).subspan(start, end - start);
+        }
+        static PathView makePrefix(const Path& p, unsigned end) {
+            assert(0 < end);
+            return PathView(p, 0, end);
+        }
+        static PathView makeSuffix(const Path& p, unsigned start) {
+            assert(start < p.arrows.size());
+            return PathView(p, start, p.arrows.size());
+        }
+
+        unsigned src() const {
+            return src_;
+        }
+
+        bool operator==(const PathView& p) {
+            return src_ == p.src_ && arrows_view_ == p.arrows_view_;
+        }
+        template <typename H>
+        friend H AbslHashValue(H h, const PathView& p) {
+            return H::combine(std::move(h), p.src_, p.arrows_view_);
+        }
+};
+
 void addEq(Diagram& d, const Path& p1, const Path& p2) {
     d.faces.push_back(std::make_pair(p1, p2));
 }
@@ -51,11 +131,11 @@ void addEq(Diagram& d, Path&& p1, Path&& p2) {
 }
 
 Path mkPath(const Diagram& d, unsigned arrow) {
-    return { d.edges[arrow].src, { arrow } };
+    return { std::addressof(d), d.edges[arrow].src, { arrow } };
 }
 Path mkPath2(const Diagram& d, unsigned a1, unsigned a2) {
     assert(d.edges[a1].dst == d.edges[a2].src);
-    return {d.edges[a1].src, { a1, a2 }};
+    return { std::addressof(d), d.edges[a1].src, { a1, a2 }};
 }
 Path consPath(const Diagram& d, unsigned arrow, const Path& p) {
     assert(d.edges[arrow].dst == p.src);
@@ -63,7 +143,7 @@ Path consPath(const Diagram& d, unsigned arrow, const Path& p) {
     steps.resize(p.arrows.size() + 1);
     steps[0] = arrow;
     std::copy(p.arrows.begin(), p.arrows.end(), steps.begin() + 1);
-    return { d.edges[arrow].src, steps };
+    return { std::addressof(d), d.edges[arrow].src, steps };
 }
 
 std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
@@ -104,8 +184,8 @@ std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
     return result;
 }
 
-using EqMat = Eigen::SparseMatrix<EqType>;
 struct CommutationCache {
+    using EqMat = Eigen::SparseMatrix<EqType>;
     Diagram d;
     std::vector<Path> all_paths;
     absl::flat_hash_map<Path,unsigned> path_ids;
@@ -151,6 +231,56 @@ CommutationCache mkCmCache(const Diagram& d, unsigned cost) {
     return result;
 }
 
+// Combutes base * x^pow into base
+template <typename T>
+void fastpow_into(T& base, T x, unsigned pow) {
+    while(pow > 0) {
+        if(pow%2 == 0) {
+            pow /= 2;
+            x = x * x;
+        } else {
+            base = base * x;
+            pow -= 1;
+        }
+    }
+}
+
+void transitivelyCloseCache(CommutationCache& cache) {
+    fastpow_into(cache.comm_mat, cache.comm_mat, cache.d.nb_nodes);
+}
+
+void contextCloseCache(CommutationCache& cache) {
+    CommutationCache::EqMat result = cache.comm_mat;
+
+    for(unsigned p = 0; p < cache.all_paths.size(); ++p) {
+        const Path& path = cache.all_paths[p];
+        for(size_t split = 1; split < path.arrows.size(); ++split) {
+            unsigned prefix = cache.path_ids[path_prefix(path, split)];
+            unsigned suffix = cache.path_ids[path_suffix(path, split)];
+
+            for(SparseMatrixInnerIterator<EqType> prefix_it(cache.comm_mat, prefix),
+                  prefix_end = SparseMatrixInnerIterator<EqType>::makeEnd(cache.comm_mat, prefix);
+              prefix_it != prefix_end; ++prefix_it) {
+                if(*prefix_it != EqType(true)) continue;
+                for(SparseMatrixInnerIterator<EqType> suffix_it(cache.comm_mat, suffix),
+                    suffix_end = SparseMatrixInnerIterator<EqType>::makeEnd(cache.comm_mat, suffix);
+                  suffix_it != suffix_end; ++suffix_it) {
+                    if(*suffix_it != EqType(true)) continue;
+                    Path rpath = path_concat(cache.all_paths[suffix_it.inner()], cache.all_paths[suffix_it.inner()]);
+                    unsigned rpath_id = cache.path_ids[rpath];
+                    if(!isSparseMatrixNullAt<EqType>(cache.comm_mat, p, rpath_id)) {
+                      result.insert(p, rpath_id) = EqType(true);
+                      result.insert(rpath_id, p) = EqType(true);
+                    }
+                }
+            }
+        }
+    }
+
+    result.makeCompressed();
+    cache.comm_mat = result;
+}
+
 int main(int, char**) {
     Diagram d;
     d.nb_nodes = 5;
@@ -167,31 +297,44 @@ int main(int, char**) {
     addEq(d, mkPath(d, 7), mkPath2(d, 4, 1));
     addEq(d, mkPath(d, 7), mkPath2(d, 5, 0));
 
+    auto start_time = std::chrono::high_resolution_clock::now();
     CommutationCache cache = mkCmCache(d, 2);
-    std::cout << "All paths[" << cache.all_paths.size() << "]:\n";
-    for(const Path& p : cache.all_paths) {
-        std::cout << "  - ";
-        if(p.arrows.empty()) {
-            std::cout << "id_" << p.src << "\n";
-            continue;
-        }
-        for(auto it = p.arrows.rbegin(), end = p.arrows.rend(); it != end; ++it) {
-            std::cout << d.edges[*it].name;
-            if(it + 1 != end) std::cout << " o ";
-        }
-        std::cout << "\n";
-    }
-    std::cout << std::endl;
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::cout << "Cache initialized in "
+              << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << "μs" << std::endl;
 
-    std::cout << "Initial equalities : ";
-    CompressedSparseMatrixIterator<EqType> it(cache.comm_mat);
-    unsigned count = 0;
-    for(CompressedSparseMatrixIterator<EqType> it(cache.comm_mat), end(CompressedSparseMatrixIterator<EqType>::makeEnd(cache.comm_mat)); it != end; ++it) {
-        std::cout << it.coordinates().first << "x" << it.coordinates().second << " ";
-        ++count;
+    start_time = std::chrono::high_resolution_clock::now();
+    contextCloseCache(cache);
+    end_time = std::chrono::high_resolution_clock::now();
+    std::cout << "Cache context closure calculated in "
+              << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << "μs" << std::endl;
+
+    start_time = std::chrono::high_resolution_clock::now();
+    transitivelyCloseCache(cache);
+    end_time = std::chrono::high_resolution_clock::now();
+    std::cout << "Cache transitive closure calculated in "
+              << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << "μs" << std::endl;
+
+    unsigned p1, p2;
+    while(true) {
+        std::cout << "All paths[" << cache.all_paths.size() << "]:\n";
+        for(unsigned p = 0; p < cache.all_paths.size(); ++p) {
+            std::cout << "[" << p << "] " << cache.all_paths[p] << "\n";
+        }
+
+        std::cout << std::endl;
+        std::cout << "Enter first path: ";
+        std::cin >> p1;
+        std::cout << "Enter second path: ";
+        std::cin >> p2;
+        if(p1 >= cache.all_paths.size() || p2 >= cache.all_paths.size()) {
+            std::cout << "Invalid paths !!!" << std::endl;
+            return 1;
+        }
+
+        std::cout << ">>>>>> " << cache.all_paths[p1] << " = " << cache.all_paths[p2]
+            << " ? " << cache.comm_mat.coeff(p1, p2) << " <<<<<<\n\n";
     }
-    std::cout << "(" << count << ")" << std::endl;
-    std::cout << cache.comm_mat << std::endl;
 
     return 0;
 }

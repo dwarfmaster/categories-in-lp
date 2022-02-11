@@ -133,4 +133,80 @@ class UncompressedSparseMatrixIterator {
         }
 };
 
+template <typename Scalar>
+class SparseMatrixInnerIterator {
+    const Scalar* actual_;
+    const typename Eigen::SparseMatrix<Scalar>::StorageIndex* index_;
+
+    static unsigned computeInnerSize(const Eigen::SparseMatrix<Scalar>& matrix, unsigned outer) {
+        if(matrix.isCompressed()) {
+            return matrix.outerIndexPtr()[outer+1] - matrix.outerIndexPtr()[outer];
+        } else {
+            return matrix.innerNonZeroPtr()[outer];
+        }
+    }
+
+    public:
+        using iterator_category = std::input_iterator_tag;
+        using value_type = const Scalar;
+        using pointer    = const Scalar*;
+        using reference  = const Scalar&;
+
+    public:
+        using M = Eigen::SparseMatrix<Scalar>;
+        SparseMatrixInnerIterator(const M& matrix, unsigned outer) : actual_(nullptr), index_(nullptr) {
+            assert(outer < matrix.outerSize());
+            actual_ = matrix.valuePtr() + matrix.outerIndexPtr()[outer];
+            index_  = matrix.innerIndexPtr() + matrix.outerIndexPtr()[outer];
+        }
+        SparseMatrixInnerIterator(const SparseMatrixInnerIterator& it) : actual_(it.actual_), index_(it.index_) { }
+        static SparseMatrixInnerIterator makeEnd(const M& matrix, unsigned outer) {
+            SparseMatrixInnerIterator end(matrix, outer);
+            if(matrix.isCompressed()) {
+                end.actual_ = matrix.valuePtr() + matrix.outerIndexPtr()[outer + 1];
+            } else {
+                end.actual_ += matrix.innerNonZeroPtr()[outer];
+            }
+            return end;
+        }
+
+        unsigned inner() const {
+            return *index_;
+        }
+
+        reference operator*() const {
+            return *actual_;
+        }
+        pointer operator->() const {
+            return actual_;
+        }
+
+        SparseMatrixInnerIterator& operator++() {
+            ++actual_;
+            return *this;
+        }
+        SparseMatrixInnerIterator operator++(int) {
+            SparseMatrixInnerIterator ret(*this);
+            ++ret;
+            return ret;
+        }
+
+        friend bool operator==(const SparseMatrixInnerIterator& a, const SparseMatrixInnerIterator& b) {
+            return a.actual_ == b.actual_;
+        }
+        friend bool operator!=(const SparseMatrixInnerIterator& a, const SparseMatrixInnerIterator& b) {
+            return a.actual_ != b.actual_;
+        }
+};
+
+template <typename Scalar>
+bool isSparseMatrixNullAt(const Eigen::SparseMatrix<Scalar>& matrix, unsigned outer, unsigned inner) {
+    SparseMatrixInnerIterator<Scalar> it(matrix, outer);
+    auto end = SparseMatrixInnerIterator<Scalar>::makeEnd(matrix, outer);
+    for(; it != end; ++it) {
+        if(it.inner() == inner) return false;
+    }
+    return true;
+}
+
 #endif // DEF_SPARSE_MATRIX_ITERATOR
