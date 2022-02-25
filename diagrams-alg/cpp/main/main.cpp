@@ -7,6 +7,7 @@
 #include <Eigen/Sparse>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 
 #include "eq_type.hpp"
@@ -21,9 +22,10 @@ struct Arrow {
 struct Diagram;
 
 struct Path {
+    using Vector = absl::InlinedVector<unsigned,62>;
+    Vector arrows;
     const Diagram* diag;
     unsigned src;
-    std::vector<unsigned> arrows;
 
     bool operator==(const Path& p) const {
         return src == p.src && arrows == p.arrows;
@@ -61,7 +63,7 @@ Path subpath(const Path& p, unsigned start, unsigned end) {
     ret.diag = p.diag;
     if(start == 0) ret.src = p.src;
     else           ret.src = p.diag->edges[p.arrows[start]].src;
-    ret.arrows = std::vector<unsigned>(p.arrows.begin() + start, p.arrows.begin() + end);
+    ret.arrows = Path::Vector(p.arrows.begin() + start, p.arrows.begin() + end);
     return ret;
 }
 
@@ -142,19 +144,19 @@ void addEq(Diagram& d, Path&& p1, Path&& p2) {
 }
 
 Path mkPath(const Diagram& d, unsigned arrow) {
-    return { std::addressof(d), d.edges[arrow].src, { arrow } };
+    return { { arrow }, std::addressof(d), d.edges[arrow].src };
 }
 Path mkPath2(const Diagram& d, unsigned a1, unsigned a2) {
     assert(d.edges[a1].dst == d.edges[a2].src);
-    return { std::addressof(d), d.edges[a1].src, { a1, a2 }};
+    return { { a1, a2 }, std::addressof(d), d.edges[a1].src };
 }
 Path consPath(const Diagram& d, unsigned arrow, const Path& p) {
     assert(d.edges[arrow].dst == p.src);
-    std::vector<unsigned> steps;
+    Path::Vector steps;
     steps.resize(p.arrows.size() + 1);
     steps[0] = arrow;
     std::copy(p.arrows.begin(), p.arrows.end(), steps.begin() + 1);
-    return { std::addressof(d), d.edges[arrow].src, steps };
+    return { steps, std::addressof(d), d.edges[arrow].src };
 }
 
 std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
@@ -302,22 +304,7 @@ void closeCache(CommutationCache& cache) {
     }
 }
 
-int main(int, char**) {
-    Diagram d;
-    d.nb_nodes = 5;
-    d.edges.push_back(Arrow(2, 3, "f"));    // 0
-    d.edges.push_back(Arrow(1, 3, "g"));    // 1
-    d.edges.push_back(Arrow(0, 3, "h"));    // 2
-    d.edges.push_back(Arrow(0, 1, "pi1"));  // 3
-    d.edges.push_back(Arrow(4, 1, "fpi1")); // 4
-    d.edges.push_back(Arrow(0, 2, "pi2"));  // 5
-    d.edges.push_back(Arrow(4, 2, "fpi2")); // 6
-    d.edges.push_back(Arrow(4, 0, "uniq")); // 7
-    addEq(d, mkPath(d, 2), mkPath2(d, 3, 1));
-    addEq(d, mkPath(d, 2), mkPath2(d, 5, 0));
-    addEq(d, mkPath(d, 4), mkPath2(d, 7, 3));
-    addEq(d, mkPath(d, 6), mkPath2(d, 7, 5));
-
+void queryGraph(const Diagram& d) {
     auto start_time = std::chrono::high_resolution_clock::now();
     CommutationCache cache = mkCmCache(d, 2);
     auto end_time = std::chrono::high_resolution_clock::now();
@@ -346,16 +333,38 @@ int main(int, char**) {
         std::cout << std::endl;
         std::cout << "Enter first path: ";
         std::cin >> p1;
+        if(p1 >= cache.all_paths.size()) {
+            std::cout << "Terminating" << std::endl;
+            return;
+        }
         std::cout << "Enter second path: ";
         std::cin >> p2;
-        if(p1 >= cache.all_paths.size() || p2 >= cache.all_paths.size()) {
-            std::cout << "Invalid paths !!!" << std::endl;
-            return 1;
+        if(p2 >= cache.all_paths.size()) {
+            std::cout << "Terminating" << std::endl;
+            return;
         }
 
         std::cout << ">>>>>> " << cache.all_paths[p1] << " = " << cache.all_paths[p2]
             << " ? " << cache.comm_mat.coeff(p1, p2) << " <<<<<<\n\n";
     }
+}
+
+int main(int, char**) {
+    Diagram d;
+    d.nb_nodes = 5;
+    d.edges.push_back(Arrow(2, 3, "f"));    // 0
+    d.edges.push_back(Arrow(1, 3, "g"));    // 1
+    d.edges.push_back(Arrow(0, 3, "h"));    // 2
+    d.edges.push_back(Arrow(0, 1, "pi1"));  // 3
+    d.edges.push_back(Arrow(4, 1, "fpi1")); // 4
+    d.edges.push_back(Arrow(0, 2, "pi2"));  // 5
+    d.edges.push_back(Arrow(4, 2, "fpi2")); // 6
+    d.edges.push_back(Arrow(4, 0, "uniq")); // 7
+    addEq(d, mkPath(d, 2), mkPath2(d, 3, 1));
+    addEq(d, mkPath(d, 2), mkPath2(d, 5, 0));
+    addEq(d, mkPath(d, 4), mkPath2(d, 7, 3));
+    addEq(d, mkPath(d, 6), mkPath2(d, 7, 5));
+    queryGraph(d);
 
     return 0;
 }
