@@ -12,6 +12,7 @@
 #include "eq_type.hpp"
 #include "sparse_matrix_iterator.hpp"
 #include "diagram.hpp"
+#include "diagram_builder.hpp"
 
 // TODO understand how to make heterogeneous lookup work
 class PathView {
@@ -239,21 +240,31 @@ void queryGraph(const Diagram& d) {
 }
 
 int main(int, char**) {
-    Diagram d;
-    d.nb_nodes = 5;
-    d.edges.push_back(Arrow(2, 3, "f"));    // 0
-    d.edges.push_back(Arrow(1, 3, "g"));    // 1
-    d.edges.push_back(Arrow(0, 3, "h"));    // 2
-    d.edges.push_back(Arrow(0, 1, "pi1"));  // 3
-    d.edges.push_back(Arrow(4, 1, "fpi1")); // 4
-    d.edges.push_back(Arrow(0, 2, "pi2"));  // 5
-    d.edges.push_back(Arrow(4, 2, "fpi2")); // 6
-    d.edges.push_back(Arrow(4, 0, "uniq")); // 7
-    addEq(d, mkPath(d, 2), mkPath2(d, 3, 1));
-    addEq(d, mkPath(d, 2), mkPath2(d, 5, 0));
-    addEq(d, mkPath(d, 4), mkPath2(d, 7, 3));
-    addEq(d, mkPath(d, 6), mkPath2(d, 7, 5));
-    queryGraph(d);
+    DiagramBuilder d;
+    std::cout << "Addings nodes" << std::endl;
+    d.addNode("a");
+    d.addNode("b");
+    d.addNode("c");
+    d.addNode("d");
+    d.addNode("p");
+    std::cout << "Adding arrows" << std::endl;
+    d.addArrow("f", "b", "d");
+    d.addArrow("g", "c", "d");
+    d.addArrow("h", "a", "d");
+    d.addArrow("pi1", "a", "b");
+    d.addArrow("pi2", "a", "c");
+    d.addArrow("fpi1", "p", "b");
+    d.addArrow("fpi2", "p", "c");
+    d.addArrow("uniq", "p", "a");
+    std::cout << "Addings faces" << std::endl;
+    d.addFace(d.mkPath("h"), d.mkPath<std::string>("pi1", "f"));
+    d.addFace(d.mkPath("h"), d.mkPath<std::string>("pi2", "g"));
+    d.addFace(d.mkPath("fpi1"), d.mkPath<std::string>("uniq", "pi1"));
+    d.addFace(d.mkPath("fpi2"), d.mkPath<std::string>("uniq", "pi2"));
+    std::cout << "Building" << std::endl;
+    Diagram diag = d.build();
+    std::cout << "Querying" << std::endl;
+    queryGraph(diag);
 
     return 0;
 }

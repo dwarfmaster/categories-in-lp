@@ -3,6 +3,7 @@ cc_binary(
   name = "diagrams-equalizer",
   srcs = [ "main.cpp",
            "diagram.cpp", "diagram.hpp",
+           "diagram_builder.cpp", "diagram_builder.hpp",
            "eq_type.cpp", "eq_type.hpp",
            "sparse_matrix_iterator.hpp" ],
   deps = [ "@eigen//:inc",

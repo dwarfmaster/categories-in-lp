@@ -51,7 +51,8 @@ std::ostream& operator<<(std::ostream& os, const Path p) {
 void addEq(Diagram& d, const Path& p1, const Path& p2) {
     assert(p1.diag == std::addressof(d));
     assert(p2.diag == std::addressof(d));
-    assert(path_dst(p1) == p2.src);
+    assert(p1.src == p2.src);
+    assert(path_dst(p1) == path_dst(p2));
     d.faces.push_back(std::make_pair(p1, p2));
 }
 void addEq(Diagram& d, Path&& p1, Path&& p2) {
