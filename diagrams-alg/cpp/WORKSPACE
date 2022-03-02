@@ -57,3 +57,10 @@ http_archive(
   strip_prefix = "abseil-cpp-98eb410c93ad059f9bba1bf43f5bb916fc92a5ea",
   sha256 = "aabf6c57e3834f8dc3873a927f37eaf69975d4b28117fc7427dfb1c661542a87",
 )
+
+# Install GoogleTest
+http_archive(
+  name = "com_google_googletest",
+  urls = ["https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip"],
+  strip_prefix = "googletest-609281088cfefc76f9d0ce82e1ff6c30cc3591e5",
+)
