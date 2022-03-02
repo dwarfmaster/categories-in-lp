@@ -133,3 +133,7 @@ CommutationCache buildCmCache(std::string_view prefix, std::ostream& os, const D
 
     return cache;
 }
+
+bool cacheQuery(const CommutationCache& cache, unsigned p1, unsigned p2) {
+    return cache.comm_mat.coeff(p1, p2);
+}

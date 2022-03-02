@@ -42,4 +42,7 @@ void transitivelyCloseCache(CommutationCache& cache);
 // Precompute everything, printing timestamps of operations on os
 CommutationCache buildCmCache(std::string_view prefix, std::ostream& os, const Diagram& d, unsigned cost);
 
+// Query cache for equality of path
+bool cacheQuery(const CommutationCache& cache, unsigned p1, unsigned p2);
+
 #endif // DEF_COMMUTATION
