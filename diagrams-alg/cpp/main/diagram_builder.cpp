@@ -1,6 +1,6 @@
 #include "diagram_builder.hpp"
 
-unsigned DiagramBuilder::lookup(const std::string& name) {
+unsigned DiagramBuilder::lookup(std::string_view name) {
     auto it = arrows_.find(name);
     assert(it != arrows_.end());
     return it->second;
@@ -42,8 +42,3 @@ Path DiagramBuilder::emptyPath(const std::string& name) {
     p.src = points_[name];
     return p;
 }
-
-Path DiagramBuilder::mkPath(const std::string& name) { return ::mkPath(diag_, lookup(name)); }
-Path DiagramBuilder::mkPath(unsigned id)   { return ::mkPath(diag_, id); }
-Path DiagramBuilder::comp(const std::string& name)   { return ::mkPath(diag_, lookup(name)); }
-Path DiagramBuilder::comp(unsigned id)     { return ::mkPath(diag_, id); }

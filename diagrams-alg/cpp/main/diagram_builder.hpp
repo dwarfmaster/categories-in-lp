@@ -2,16 +2,19 @@
 #define DEF_DIAGRAM_BUILDER
 
 #include "diagram.hpp"
+#include "absl/container/flat_hash_map.h"
 #include <unordered_map>
 #include <string>
 
 class DiagramBuilder {
     Diagram diag_;
-    std::unordered_map<std::string, unsigned> points_;
-    std::unordered_map<std::string, unsigned> arrows_;
+    absl::flat_hash_map<std::string, unsigned> points_;
+    absl::flat_hash_map<std::string, unsigned> arrows_;
 
-    unsigned lookup(const std::string& name);
+    unsigned lookup(absl::string_view name);
     Path addToPath(Path&& path, unsigned arrow);
+
+    template<typename T> struct PathGetter { };
 
     public:
         DiagramBuilder();
@@ -25,18 +28,56 @@ class DiagramBuilder {
 
         // Path creation
         Path emptyPath(const std::string& name);
-        Path mkPath(const std::string& name);
-        Path mkPath(unsigned id);
         template<typename... Args>
-        Path mkPath(Args... args, const std::string& name) { return addToPath(mkPath(args...), lookup(name)); }
+        struct PathMaker { };
         template<typename... Args>
-        Path mkPath(Args... args, unsigned id) { return addToPath(mkPath(args...), id); }
-        Path comp(const std::string& name);
-        Path comp(unsigned id);
+        Path mkPath(Args... args) {
+            return PathMaker<Args...>::make(*this, args...);
+        }
         template<typename... Args>
-        Path comp(const std::string& name, Args... args) { return addToPath(comp(args...), lookup(name)); }
+        struct CompMaker { };
         template<typename... Args>
-        Path comp(unsigned id, Args... args) { return addToPath(comp(args...), id); }
+        Path comp(Args... args) {
+            return CompMaker<Args...>::make(*this, args...);
+        }
+};
+
+// Path getters
+template<> struct DiagramBuilder::PathGetter<std::string> {
+    static unsigned get(DiagramBuilder& db, std::string_view name) { return db.lookup(name); }
+};
+template<> struct DiagramBuilder::PathGetter<const std::string&> {
+    static unsigned get(DiagramBuilder& db, std::string_view name) { return db.lookup(name); }
+};
+template<> struct DiagramBuilder::PathGetter<const char*> {
+    static unsigned get(DiagramBuilder& db, std::string_view name) { return db.lookup(name); }
+};
+template<> struct DiagramBuilder::PathGetter<unsigned> {
+    static unsigned get(DiagramBuilder&, unsigned i) { return i; }
+};
+
+// Path makers
+template<typename T, typename... Args>
+struct DiagramBuilder::PathMaker<T, Args...> {
+    static Path make(DiagramBuilder& db, Args... args, T name) {
+        return db.addToPath(PathMaker<Args...>::make(db, args...), PathGetter<T>::get(db, name));
+    }
+};
+template<typename T>
+struct DiagramBuilder::PathMaker<T> {
+    static Path make(DiagramBuilder& db, T name) { return ::mkPath(db.diag_, PathGetter<T>::get(db, name)); }
+};
+template<typename T, typename... Args>
+struct DiagramBuilder::CompMaker<T, Args...> {
+    static Path make(DiagramBuilder& db, T name, Args... args) {
+        return db.addToPath(CompMaker<Args...>::make(db, args...), PathGetter<T>::get(db, name));
+    }
+};
+template <typename T>
+struct DiagramBuilder::CompMaker<T> {
+    static Path make(DiagramBuilder& db, T name) {
+        return ::mkPath(db.diag_, PathGetter<T>::get(db, name));
+    }
 };
 
 #endif // DEF_DIAGRAM_BUILDER
