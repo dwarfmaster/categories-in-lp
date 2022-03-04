@@ -8,7 +8,7 @@
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; };
       shell = pkgs.mkShell {
-        buildInputs = builtins.attrValues {
+        packages = builtins.attrValues {
           inherit (pkgs)
             bazel;
         };
