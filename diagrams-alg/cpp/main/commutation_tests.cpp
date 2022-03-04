@@ -31,12 +31,12 @@ TEST(Commutation, Pullback) {
   d.addArrow("fpi1", "p", "b");
   d.addArrow("fpi2", "p", "c");
   d.addArrow("uniq", "p", "a");
-  d.addFace(d.mkPath("h"), d.mkPath<std::string>("pi1", "f"));
-  d.addFace(d.mkPath("h"), d.mkPath<std::string>("pi2", "g"));
-  d.addFace(d.mkPath("fpi1"), d.mkPath<std::string>("uniq", "pi1"));
-  d.addFace(d.mkPath("fpi2"), d.mkPath<std::string>("uniq", "pi2"));
+  d.addFace(d.mkPath("h"), d.mkPath("pi1", "f"));
+  d.addFace(d.mkPath("h"), d.mkPath("pi2", "g"));
+  d.addFace(d.mkPath("fpi1"), d.mkPath("uniq", "pi1"));
+  d.addFace(d.mkPath("fpi2"), d.mkPath("uniq", "pi2"));
   Diagram diag = d.build();
-  CommutationCache cache = buildCmCache("pullback", osnull, diag, 2);
+  CommutationCache cache = buildCmCache("pullback", std::cout, diag, 2);
 
   ASSERT_FALSE(cacheQuery(cache, 0, 1));
   ASSERT_TRUE(cacheQuery(cache, 3, 4));
@@ -60,19 +60,26 @@ TEST(Commutation, ExpFunct) {
     d.addArrow("id x pi2 m2", "pi1 s^pi2 s x pi2 d2", "pi1 s^pi2 s x pi2 d1");
     d.addArrow("id x pi2 m1", "pi1 s^pi2 s x pi2 d1", "pi1 s^pi2 s x pi2 s");
     d.addArrow("id x pi2 (m2 o m1)", "pi1 s^pi2 s x pi2 d2", "pi1 s^pi2 s x pi2 s");
-    d.addFace(d.mkPath("id x pi2 (m2 o m1)"), d.mkPath<std::string>("id x pi2 m2", "id x pi2 m1"));
+    d.addFace(d.mkPath("id x pi2 (m2 o m1)"), d.mkPath("id x pi2 m2", "id x pi2 m1"));
     d.addArrow("ev_s", "pi1 s^pi2 s x pi2 s", "pi1 s");
     d.addArrow("pi1 m1", "pi1 s", "pi1 d1");
     d.addArrow("pi1 m2", "pi1 d1", "pi1 d2");
     d.addArrow("pi1 (m2 o m1)", "pi1 s", "pi1 d2");
-    d.addFace(d.mkPath("pi1 (m2 o m1)"), d.mkPath<std::string>("pi1 m1", "pi1 m2"));
+    d.addFace(d.mkPath("pi1 (m2 o m1)"), d.mkPath("pi1 m1", "pi1 m2"));
     d.addArrow("[m1] x id_d2", "pi1 s^pi2 s x pi2 d2", "pi1 d1^pi2 d1 x pi2 d2");
     d.addArrow("[m1] x id_d1", "pi1 s^pi2 s x pi2 d1", "pi1 d1^pi2 d1 x pi2 d1");
     d.addArrow("id_d1 x pi2 m2", "pi1 d1^pi2 d1 x pi2 d2", "pi1 d1^pi2 d1 x pi2 d1");
-    d.addFace(d.mkPath<std::string>("[m1] x id_d2", "id_d1 x pi2 m2"), d.mkPath<std::string>("id x pi2 m2", "[m1] x id_d1"));
+    d.addFace(d.mkPath("[m1] x id_d2", "id_d1 x pi2 m2"), d.mkPath("id x pi2 m2", "[m1] x id_d1"));
     d.addArrow("ev_d1", "pi1 d1^pi2 d1 x pi2 d1", "pi1 d1");
     d.addArrow("[m2] x id", "pi1 d1^pi2 d1 x pi2 d2", "pi1 d2^pi2 d2 x pi2 d2");
     d.addArrow("ev_d2", "pi1 d2^pi2 d2 x pi2 d2", "pi1 d2");
     d.addArrow("[m2 o m1] x id", "pi1 s^pi2 s x pi2 d2", "pi1 d2^pi2 d2 x pi2 d2");
+    d.addFace(d.mkPath("[m1] x id_d1", "ev_d1"), d.mkPath("id x pi2 m1", "ev_s", "pi1 m1"));
+    d.addFace(d.mkPath("[m2] x id", "ev_d2"), d.mkPath("id_d1 x pi2 m2", "ev_d1", "pi1 m2"));
 
+    Diagram diag = d.build();
+    CommutationCache cache = buildCmCache("ExpFunc", std::cout, diag, 5);
+
+    std::cout << cache.all_paths[11] << " = " << cache.all_paths[12] << " ?" << std::endl;
+    ASSERT_TRUE(cacheQuery(cache, 11, 12));
 }
