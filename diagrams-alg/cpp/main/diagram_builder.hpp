@@ -22,8 +22,8 @@ class DiagramBuilder {
 
         // Low-level edition
         void addNode(const std::string& name);
-        void addArrow(const std::string& name, unsigned src, unsigned dst);
-        void addArrow(const std::string& name, const std::string& src, const std::string& dst);
+        void addArrow(const std::string& name, unsigned src, unsigned dst, bool mono = false, bool epi = false);
+        void addArrow(const std::string& name, const std::string& src, const std::string& dst, bool mono = false, bool epi = false);
         void addFace(const Path& p1, const Path& p2);
 
         // Path creation

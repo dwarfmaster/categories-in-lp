@@ -23,13 +23,15 @@ void DiagramBuilder::addNode(const std::string& name) {
     ++diag_.nb_nodes;
 }
 
-void DiagramBuilder::addArrow(const std::string& name, unsigned src, unsigned dst) {
+void DiagramBuilder::addArrow(const std::string& name, unsigned src, unsigned dst, bool mono, bool epi) {
     arrows_.insert(std::make_pair(name, diag_.edges.size()));
     diag_.edges.push_back(Arrow(src, dst, name));
+    diag_.edges.back().isMono = mono;
+    diag_.edges.back().isEpi  = epi;
 }
 
-void DiagramBuilder::addArrow(const std::string& name, const std::string& src, const std::string& dst) {
-    addArrow(name, points_[src], points_[dst]);
+void DiagramBuilder::addArrow(const std::string& name, const std::string& src, const std::string& dst, bool mono, bool epi) {
+    addArrow(name, points_[src], points_[dst], mono, epi);
 }
 
 void DiagramBuilder::addFace(const Path& p1, const Path& p2) {

@@ -10,7 +10,9 @@
 struct Arrow {
     unsigned src, dst;
     std::string name;
-    Arrow(unsigned s, unsigned d, const std::string& n) : src(s), dst(d), name(n) {}
+    bool isMono, isEpi;
+    Arrow(unsigned s, unsigned d, const std::string& n)
+        : src(s), dst(d), name(n), isMono(false), isEpi(false) {}
 };
 
 struct Diagram;

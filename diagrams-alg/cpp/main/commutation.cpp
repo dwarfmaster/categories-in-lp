@@ -40,6 +40,29 @@ class PostComposeHook : public CommutationHook {
         }
 };
 
+class MonomorphismHook : public CommutationHook {
+    unsigned arrow_;
+    public:
+        MonomorphismHook(const CommutationCache& cache, unsigned arrow)
+            : CommutationHook(cache), arrow_(arrow) { }
+        virtual ConditionType condition() const { return ConditionType::Dst; }
+        virtual unsigned onDst() const {
+            return cache_.d.edges[arrow_].dst;
+        }
+        virtual std::vector<std::pair<unsigned,unsigned>> extend(unsigned p1, unsigned p2) {
+            Path pth1 = cache_.all_paths[p1];
+            Path pth2 = cache_.all_paths[p2];
+            if(pth1.arrows.empty() || pth1.arrows.back() != arrow_) return { };
+            if(pth2.arrows.empty() || pth2.arrows.back() != arrow_) return { };
+            pth1.arrows.pop_back();
+            pth2.arrows.pop_back();
+            auto it1 = cache_.path_ids.find(pth1);
+            auto it2 = cache_.path_ids.find(pth2);
+            if(it1 == cache_.path_ids.end() || it2 == cache_.path_ids.end()) return { };
+            return { std::make_pair(it1->second, it2->second) };
+        }
+};
+
 std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
     assert(maxSize > 0);
     std::vector<Path> result;
@@ -157,6 +180,10 @@ CommutationCache mkCmCache(const Diagram& d, unsigned cost) {
     for(unsigned arrow = 0; arrow < d.edges.size(); ++arrow) {
         addHook<PostComposeHook>(result, arrow);
         addHook<PreComposeHook> (result, arrow);
+        if(d.edges[arrow].isMono) addHook<MonomorphismHook>(result, arrow);
+        if(d.edges[arrow].isEpi) {
+            // TODO
+        }
     }
 
     // Fill pre-existing faces

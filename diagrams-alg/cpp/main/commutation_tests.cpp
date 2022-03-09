@@ -94,3 +94,23 @@ TEST(Commutation, ExpFunct) {
     ASSERT_TRUE(cacheQuery(cache, 15, 11));
     ASSERT_TRUE(cacheQuery(cache, 10, 11));
 }
+
+TEST(Commutation, EpiMono) {
+  DiagramBuilder d;
+  d.addNode("a"); d.addNode("b"); d.addNode("c");
+  d.addArrow("epi", "a", "b", false, true);
+  d.addArrow("f", "b", "c");
+  d.addArrow("g", "b", "c");
+  d.addArrow("mono", "c", "d", true, false);
+  d.addFace(d.mkPath("epi", "f", "mono"), d.mkPath("epi", "g", "mono"));
+
+  Diagram diag = d.build();
+  CommutationCache cache = buildCmCache("EpiMono", std::cout, diag, 3);
+  // for (unsigned p = 0; p < cache.all_paths.size(); ++p) {
+  //   std::cout << "[" << p << "] " << cache.all_paths[p] << "\n";
+  // }
+  // std::cout << std::endl;
+
+  std::cout << cache.all_paths[5] << " = " << cache.all_paths[6] << " ?" << std::endl;
+  ASSERT_TRUE(cacheQuery(cache, 5, 6));
+}
