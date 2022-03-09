@@ -74,10 +74,11 @@ std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
     size_t finalSize = 0;
     for(size_t i = 0; i < connections.size(); ++i) finalSize += connections[i].size();
     result.resize(finalSize);
-    for(size_t i = 0, pth = 0; i < connections.size(); ++i) {
-        for(size_t p = 0; p < connections[i].size(); ++p, ++pth) {
-            result[pth] = std::move(connections[i][p]);
-        }
+    auto it = result.begin();
+    for(size_t i = 0; i < connections.size(); ++i) {
+        it = std::copy(std::make_move_iterator(connections[i].begin()),
+                       std::make_move_iterator(connections[i].end()),
+                       it);
     }
     return result;
 }
@@ -224,7 +225,7 @@ void transitivelyCloseCache(CommutationCache& cache) {
 
 CommutationCache buildCmCache(std::string_view prefix, std::ostream& os, const Diagram& d, unsigned cost) {
     auto start_time = std::chrono::high_resolution_clock::now();
-    CommutationCache cache = mkCmCache(d, 2);
+    CommutationCache cache = mkCmCache(d, cost);
     auto end_time = std::chrono::high_resolution_clock::now();
     os << "[" << prefix << "] Cache initialized in "
        << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << "μs" << std::endl;
