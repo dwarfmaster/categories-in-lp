@@ -106,11 +106,6 @@ TEST(Commutation, EpiMono) {
 
   Diagram diag = d.build();
   CommutationCache cache = buildCmCache("EpiMono", std::cout, diag, 3);
-  // for (unsigned p = 0; p < cache.all_paths.size(); ++p) {
-  //   std::cout << "[" << p << "] " << cache.all_paths[p] << "\n";
-  // }
-  // std::cout << std::endl;
-
-  std::cout << cache.all_paths[5] << " = " << cache.all_paths[6] << " ?" << std::endl;
-  ASSERT_TRUE(cacheQuery(cache, 5, 6));
+  // Tests is f = g
+  ASSERT_TRUE(cacheQuery(cache, 11, 12));
 }
