@@ -38,12 +38,12 @@ Path path_concat(const Path& p1, const Path& p2) {
 
 std::ostream& operator<<(std::ostream& os, const Path p) {
     if(p.arrows.empty()) {
-        os << "id_" << p.src << "\n";
+        os << "id_" << p.src;
         return os;
     }
     for(auto it = p.arrows.rbegin(), end = p.arrows.rend(); it != end; ++it) {
         os << p.diag->edges[*it].name;
-        if(it + 1 != end) std::cout << " o ";
+        if(it + 1 != end) os << " o ";
     }
     return os;
 }
