@@ -67,7 +67,8 @@ void queryGraph(const Diagram &d) {
     }
 
     std::cout << ">> " << cache.all_paths[p1] << " = "
-              << cache.all_paths[p2] << " ? " << cache.comm_mat.coeff(p1, p2)
+              << cache.all_paths[p2] << " ? "
+              << cacheQuery(cache, p1, p2) << " - " << unionQuery(cache, p1, p2)
               << "\n";
     ++nbQueries;
     nbQueries %= 10;
@@ -92,10 +93,10 @@ int main(int, char **) {
   d.addArrow("fpi2", "p", "c");
   d.addArrow("uniq", "p", "a");
   std::cout << "Addings faces" << std::endl;
-  d.addFace(d.mkPath("h"), d.mkPath<std::string>("pi1", "f"));
-  d.addFace(d.mkPath("h"), d.mkPath<std::string>("pi2", "g"));
-  d.addFace(d.mkPath("fpi1"), d.mkPath<std::string>("uniq", "pi1"));
-  d.addFace(d.mkPath("fpi2"), d.mkPath<std::string>("uniq", "pi2"));
+  d.addFace(d.mkPath("h"), d.mkPath("pi1", "f"));
+  d.addFace(d.mkPath("h"), d.mkPath("pi2", "g"));
+  d.addFace(d.mkPath("fpi1"), d.mkPath("uniq", "pi1"));
+  d.addFace(d.mkPath("fpi2"), d.mkPath("uniq", "pi2"));
   std::cout << "Building" << std::endl;
   Diagram diag = d.build();
   std::cout << "Querying" << std::endl;
