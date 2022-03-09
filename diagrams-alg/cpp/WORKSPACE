@@ -33,23 +33,6 @@ hedron_compile_commands_setup()
 # Re-generate the file by running:
 # $ bazel run @hedron_compile_commands//:refresh_all
 
-# Find Eigen in nixpkgs
-nixpkgs_package(
-    name = "eigen",
-    repositories = { "nixpkgs": "@nixpkgs//:default.nix" },
-    build_file_content =
-"""
-cc_library(
-  name = "inc",
-  srcs = [],
-  includes = ["."],
-  hdrs = glob(['include/eigen3/Eigen/**']),
-  strip_include_prefix = "include/eigen3",
-  visibility = ["//visibility:public"],
-)
-"""
-)
-
 # Install Abseil
 http_archive(
   name = "com_google_absl",

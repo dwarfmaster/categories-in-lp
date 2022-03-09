@@ -68,7 +68,7 @@ void queryGraph(const Diagram &d) {
 
     std::cout << ">> " << cache.all_paths[p1] << " = "
               << cache.all_paths[p2] << " ? "
-              << cacheQuery(cache, p1, p2) << " - " << unionQuery(cache, p1, p2)
+              << cacheQuery(cache, p1, p2)
               << "\n";
     ++nbQueries;
     nbQueries %= 10;

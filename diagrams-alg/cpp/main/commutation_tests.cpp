@@ -1,5 +1,6 @@
 
 #include <gtest/gtest.h>
+#include <fstream>
 
 #include "diagram.hpp"
 #include "diagram_builder.hpp"
@@ -80,6 +81,16 @@ TEST(Commutation, ExpFunct) {
     Diagram diag = d.build();
     CommutationCache cache = buildCmCache("ExpFunc", std::cout, diag, 5);
 
-    std::cout << cache.all_paths[10] << " = " << cache.all_paths[9] << " ?" << std::endl;
-    ASSERT_TRUE(cacheQuery(cache, 10, 9));
+    std::cout << cache.all_paths[11] << " = " << cache.all_paths[10] << " ?" << std::endl;
+    ASSERT_TRUE(cacheQuery(cache, 35, 36));
+    ASSERT_TRUE(cacheQuery(cache, 10, 14));
+    ASSERT_TRUE(cacheQuery(cache, 1, 2));
+    ASSERT_TRUE(cacheQuery(cache, 10, 12));
+    ASSERT_TRUE(cacheQuery(cache, 14, 12));
+    ASSERT_TRUE(cacheQuery(cache, 10, 16));
+    ASSERT_TRUE(cacheQuery(cache, 24, 25));
+    ASSERT_TRUE(cacheQuery(cache, 16, 13));
+    ASSERT_TRUE(cacheQuery(cache, 13, 15));
+    ASSERT_TRUE(cacheQuery(cache, 15, 11));
+    ASSERT_TRUE(cacheQuery(cache, 10, 11));
 }
