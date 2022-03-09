@@ -41,9 +41,9 @@ TEST(Commutation, Pullback) {
   ASSERT_FALSE(cacheQuery(cache, 0, 1));
   ASSERT_TRUE(cacheQuery(cache, 3, 4));
   ASSERT_TRUE(cacheQuery(cache, 10, 11));
-  ASSERT_FALSE(cacheQuery(cache, 13, 11));
-  ASSERT_TRUE(cacheQuery(cache, 20, 21));
-  ASSERT_TRUE(cacheQuery(cache, 22, 23));
+  ASSERT_FALSE(cacheQuery(cache, 9, 10));
+  ASSERT_TRUE(cacheQuery(cache, 12, 13));
+  ASSERT_TRUE(cacheQuery(cache, 15, 16));
 }
 
 TEST(Commutation, ExpFunct) {
@@ -80,6 +80,6 @@ TEST(Commutation, ExpFunct) {
     Diagram diag = d.build();
     CommutationCache cache = buildCmCache("ExpFunc", std::cout, diag, 5);
 
-    std::cout << cache.all_paths[11] << " = " << cache.all_paths[12] << " ?" << std::endl;
-    ASSERT_TRUE(cacheQuery(cache, 11, 12));
+    std::cout << cache.all_paths[10] << " = " << cache.all_paths[9] << " ?" << std::endl;
+    ASSERT_TRUE(cacheQuery(cache, 10, 9));
 }

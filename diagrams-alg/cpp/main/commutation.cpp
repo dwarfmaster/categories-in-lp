@@ -53,13 +53,16 @@ std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
     }
 
     // Grow paths
-    std::vector<unsigned> oldSizes(connections.size(), 0);
+    std::vector<std::pair<unsigned,unsigned>> oldRanges(connections.size(), std::make_pair(0,0));
     for(size_t size = 1; size < maxSize; ++size) {
-        for(size_t cn = 0; cn < connections.size(); ++cn) oldSizes[cn] = connections[cn].size();
+        for(size_t cn = 0; cn < connections.size(); ++cn) {
+            oldRanges[cn].first = oldRanges[cn].second;
+            oldRanges[cn].second = connections[cn].size();
+        }
         for(size_t a = 0; a < d.edges.size(); ++a) {
             for(size_t dest = 0; dest < d.nb_nodes; ++dest) {
                 unsigned outId = d.edges[a].dst * d.nb_nodes + dest;
-                for(size_t old = 0; old < oldSizes[outId]; ++old) {
+                for(size_t old = oldRanges[outId].first; old < oldRanges[outId].second; ++old) {
                     Path npath = consPath(d, a, connections[outId][old]);
                     connections[d.edges[a].src * d.nb_nodes + dest].push_back(npath);
                 }
