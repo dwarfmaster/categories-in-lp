@@ -10,15 +10,17 @@
 struct Arrow {
     unsigned src, dst;
     std::string name;
-    bool isMono, isEpi;
+    bool isMono, isEpi, isIso;
+    // If isIso, which arrow is its inverse in the diagram
+    unsigned inverse;
     Arrow(unsigned s, unsigned d, const std::string& n)
-        : src(s), dst(d), name(n), isMono(false), isEpi(false) {}
+        : src(s), dst(d), name(n), isMono(false), isEpi(false), isIso(false), inverse(0) {}
 };
 
 struct Diagram;
 
 struct Path {
-    using Vector = absl::InlinedVector<unsigned,62>;
+    using Vector = absl::InlinedVector<unsigned,58>;
     Vector arrows;
     const Diagram* diag;
     unsigned src;
@@ -32,6 +34,7 @@ struct Path {
         return H::combine(std::move(h), p.src, p.arrows);
     }
 };
+static_assert(sizeof(Path) == 64 * sizeof(unsigned), "Path must be of size 64");
 
 struct Diagram {
     unsigned nb_nodes;
