@@ -17,6 +17,30 @@ const NullStream& operator<<(NullStream&& os, const T&) {
 }
 NullStream osnull;
 
+TEST(Paths, Normalisation) {
+  DiagramBuilder db;
+  unsigned a = db.addNode("a");
+  unsigned b = db.addNode("b");
+  unsigned c = db.addNode("c");
+  unsigned d = db.addNode("d");
+  auto [i1, i1_inv] = db.addIso("i1", a, b);
+  auto [i2, i2_inv] = db.addIso("i2", b, c);
+  auto [i3, i3_inv] = db.addIso("i3", c, d);
+  Diagram diag = db.build();
+
+  Path p1; p1.src = a; p1.diag = &diag; p1.arrows = { i1, i2, i2_inv, i1_inv };
+  ASSERT_FALSE(p1.normalize());
+  ASSERT_TRUE(p1.isId());
+
+  Path p2; p2.src = a; p2.diag = &diag; p2.arrows = { i1, i2, i3 };
+  ASSERT_TRUE(p2.normalize());
+
+  Path p2_; p2_.src = a; p2_.diag = &diag; p2_.arrows = { i2_inv, i1_inv };
+  p2.postcompose(p2_);
+  ASSERT_TRUE(p2.arrows.size() == 1);
+  ASSERT_TRUE(diag.edges[p2.arrows[0]].name == "i3");
+}
+
 TEST(Commutation, Pullback) {
   DiagramBuilder d;
   d.addNode("a");

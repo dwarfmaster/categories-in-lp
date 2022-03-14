@@ -1,6 +1,72 @@
 
 #include "diagram.hpp"
 
+// Returns true if already normal
+bool Path::normalize() {
+    bool changed = false;
+    unsigned size = arrows.size();
+    while(true) {
+        unsigned in = 0, out = 0;
+        while(in + 1 < size) {
+            if(diag->edges[arrows[in]].inverse == arrows[in+1]) {
+                in += 2;
+                changed = true;
+            } else {
+                arrows[out] = arrows[in];
+                ++in; ++out;
+            }
+        }
+        // Copy the last element if it hasn't been skipped
+        if(in + 1 == arrows.size()) {
+            arrows[out] = arrows[in];
+            ++in; ++out;
+        }
+        if(size == out) break;
+        else size = out;
+    }
+    arrows.resize(size);
+    return !changed;
+}
+
+void Path::precompose(unsigned arrow) {
+    if(arrows.empty() || diag->edges[arrows.back()].inverse != arrow) {
+        arrows.push_back(arrow);
+    } else {
+        arrows.resize(arrows.size() - 1);
+    }
+}
+
+void Path::precompose(const Path& p) {
+    unsigned pstart = 0, last = arrows.size();
+    while(last > 0 && pstart < p.arrows.size()) {
+        --last;
+        if(diag->edges[arrows[last]].inverse != p.arrows[pstart]) break;
+        ++pstart;
+    }
+    arrows.resize(last + p.arrows.size() - pstart);
+    for(size_t i = pstart; i < p.arrows.size(); ++i) arrows[(last + i) - pstart] = p.arrows[i];
+}
+
+void Path::postcompose(unsigned arrow) {
+    if(arrows.empty() || diag->edges[arrows[0]].inverse != arrow) {
+        arrows.resize(arrows.size() + 1);
+        if(arrows.empty()) {
+            arrows = { arrow };
+        } else {
+          for (size_t i = arrows.size() - 1; i > 0; --i) arrows[i] = arrows[i-1];
+          arrows[0] = arrow;
+        }
+    } else {
+        for(size_t i = 0; i + 1 < arrows.size(); ++i) arrows[i] = arrows[i+1];
+        arrows.resize(arrows.size() - 1);
+    }
+}
+
+void Path::postcompose(const Path& p) {
+    Path temp = p; temp.precompose(*this);
+    *this = std::move(temp);
+}
+
 unsigned path_dst(const Path& p) {
     if(p.arrows.empty()) return p.src;
     else return p.diag->edges[p.arrows.back()].dst;

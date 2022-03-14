@@ -33,6 +33,17 @@ struct Path {
     friend H AbslHashValue(H h, const Path& p) {
         return H::combine(std::move(h), p.src, p.arrows);
     }
+
+    // Returns true if already normal
+    bool normalize();
+    // Is identity
+    inline bool isId() const { return arrows.empty(); }
+    // Extend to the right while preserving normalisation
+    void precompose(unsigned arrow);
+    void precompose(const Path& p);
+    // Extend to the left while preserving normalisation
+    void postcompose(unsigned arrow);
+    void postcompose(const Path& p);
 };
 static_assert(sizeof(Path) == 64 * sizeof(unsigned), "Path must be of size 64");
 

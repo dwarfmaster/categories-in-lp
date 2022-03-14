@@ -18,9 +18,10 @@ DiagramBuilder::DiagramBuilder() {
 
 Diagram DiagramBuilder::build() const { return diag_; }
 
-void DiagramBuilder::addNode(const std::string& name) {
+unsigned DiagramBuilder::addNode(const std::string& name) {
     points_.insert(std::make_pair(name, diag_.nb_nodes));
     ++diag_.nb_nodes;
+    return diag_.nb_nodes - 1;
 }
 
 unsigned DiagramBuilder::addArrow(const std::string& name, unsigned src, unsigned dst, bool mono, bool epi) {

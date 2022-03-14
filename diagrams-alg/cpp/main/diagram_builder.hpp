@@ -21,7 +21,7 @@ class DiagramBuilder {
         Diagram build() const;
 
         // Low-level edition
-        void addNode(const std::string& name);
+        unsigned addNode(const std::string& name);
         unsigned addArrow(const std::string& name, unsigned src, unsigned dst, bool mono = false, bool epi = false);
         unsigned addArrow(const std::string& name, const std::string& src, const std::string& dst, bool mono = false, bool epi = false);
         void makeInverse(unsigned a1, unsigned a2);
