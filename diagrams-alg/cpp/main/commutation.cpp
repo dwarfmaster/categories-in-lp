@@ -2,18 +2,18 @@
 
 #include <chrono>
 
-class PreComposeHook : public CommutationHook {
+class PostComposeHook : public CommutationHook {
     unsigned arrow_;
     public:
-        PreComposeHook(const CommutationCache& cache, unsigned arrow)
+        PostComposeHook(const CommutationCache& cache, unsigned arrow)
             : CommutationHook(cache), arrow_(arrow) { }
         virtual ConditionType condition() const { return ConditionType::Src; }
         virtual unsigned onSrc() const {
             return cache_.d.edges[arrow_].dst;
         }
         virtual std::vector<std::pair<unsigned,unsigned>> extend(unsigned p1, unsigned p2) {
-            Path pth1 = consPath(cache_.d, arrow_, cache_.all_paths[p1]);
-            Path pth2 = consPath(cache_.d, arrow_, cache_.all_paths[p2]);
+            Path pth1(cache_.all_paths[p1]); pth1.postcompose(arrow_);
+            Path pth2(cache_.all_paths[p2]); pth2.postcompose(arrow_);
             auto it1 = cache_.path_ids.find(pth1);
             auto it2 = cache_.path_ids.find(pth2);
             if(it1 == cache_.path_ids.end() || it2 == cache_.path_ids.end()) return { };
@@ -21,18 +21,18 @@ class PreComposeHook : public CommutationHook {
         }
 };
 
-class PostComposeHook : public CommutationHook {
+class PreComposeHook : public CommutationHook {
     unsigned arrow_;
     public:
-        PostComposeHook(const CommutationCache& cache, unsigned arrow)
+        PreComposeHook(const CommutationCache& cache, unsigned arrow)
             : CommutationHook(cache), arrow_(arrow) { }
         virtual ConditionType condition() const { return ConditionType::Dst; }
         virtual unsigned onDst() const {
             return cache_.d.edges[arrow_].src;
         }
         virtual std::vector<std::pair<unsigned,unsigned>> extend(unsigned p1, unsigned p2) {
-            Path pth1 = cache_.all_paths[p1]; pth1.arrows.push_back(arrow_);
-            Path pth2 = cache_.all_paths[p2]; pth2.arrows.push_back(arrow_);
+            Path pth1(cache_.all_paths[p1]); pth1.precompose(arrow_);
+            Path pth2(cache_.all_paths[p2]); pth2.precompose(arrow_);
             auto it1 = cache_.path_ids.find(pth1);
             auto it2 = cache_.path_ids.find(pth2);
             if(it1 == cache_.path_ids.end() || it2 == cache_.path_ids.end()) return { };
@@ -50,8 +50,8 @@ class MonomorphismHook : public CommutationHook {
             return cache_.d.edges[arrow_].dst;
         }
         virtual std::vector<std::pair<unsigned,unsigned>> extend(unsigned p1, unsigned p2) {
-            Path pth1 = cache_.all_paths[p1];
-            Path pth2 = cache_.all_paths[p2];
+            Path pth1(cache_.all_paths[p1]);
+            Path pth2(cache_.all_paths[p2]);
             if(pth1.arrows.empty() || pth1.arrows.back() != arrow_) return { };
             if(pth2.arrows.empty() || pth2.arrows.back() != arrow_) return { };
             pth1.arrows.pop_back();
@@ -73,8 +73,8 @@ class EpimorphismHook : public CommutationHook {
             return cache_.d.edges[arrow_].src;
         }
         virtual std::vector<std::pair<unsigned,unsigned>> extend(unsigned p1, unsigned p2) {
-            Path pth1 = cache_.all_paths[p1];
-            Path pth2 = cache_.all_paths[p2];
+            Path pth1(cache_.all_paths[p1]);
+            Path pth2(cache_.all_paths[p2]);
             if(pth1.arrows.empty() || pth1.arrows[0] != arrow_) return { };
             if(pth2.arrows.empty() || pth2.arrows[0] != arrow_) return { };
             pth1.src = cache_.d.edges[pth1.arrows[0]].dst;
@@ -110,8 +110,10 @@ std::vector<Path> enumeratePathsOfSize(const Diagram& d, size_t maxSize) {
             for(size_t dest = 0; dest < d.nb_nodes; ++dest) {
                 unsigned outId = d.edges[a].dst * d.nb_nodes + dest;
                 for(size_t old = oldRanges[outId].first; old < oldRanges[outId].second; ++old) {
-                    Path npath = consPath(d, a, connections[outId][old]);
-                    connections[d.edges[a].src * d.nb_nodes + dest].push_back(npath);
+                    Path npath(connections[outId][old]); npath.postcompose(a);
+                    if(npath.arrows.size() == size + 1) {
+                        connections[d.edges[a].src * d.nb_nodes + dest].push_back(npath);
+                    }
                 }
             }
         }

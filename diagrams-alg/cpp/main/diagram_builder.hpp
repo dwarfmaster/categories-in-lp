@@ -28,21 +28,27 @@ class DiagramBuilder {
         void makeInverse(const std::string& a1, const std::string& a2);
         std::pair<unsigned,unsigned> addIso(const std::string& name, unsigned src, unsigned dst);
         std::pair<unsigned,unsigned> addIso(const std::string& name, const std::string& src, const std::string& dst);
+        // Assumes paths are normalized
         void addFace(const Path& p1, const Path& p2);
 
         // Path creation
+        // Always return normalized paths
         Path emptyPath(const std::string& name);
         template<typename... Args>
         struct PathMaker { };
         template<typename... Args>
         Path mkPath(Args... args) {
-            return PathMaker<Args...>::make(*this, args...);
+            Path ret = PathMaker<Args...>::make(*this, args...);
+            ret.normalize();
+            return ret;
         }
         template<typename... Args>
         struct CompMaker { };
         template<typename... Args>
         Path comp(Args... args) {
-            return CompMaker<Args...>::make(*this, args...);
+            Path ret = CompMaker<Args...>::make(*this, args...);
+            ret.normalize();
+            return ret;
         }
 };
 

@@ -1,6 +1,10 @@
 
 #include "diagram.hpp"
 
+inline bool isInverse(const Arrow& a, unsigned inv) {
+    return a.isIso && a.inverse == inv;
+}
+
 // Returns true if already normal
 bool Path::normalize() {
     bool changed = false;
@@ -8,7 +12,7 @@ bool Path::normalize() {
     while(true) {
         unsigned in = 0, out = 0;
         while(in + 1 < size) {
-            if(diag->edges[arrows[in]].inverse == arrows[in+1]) {
+            if(isInverse(diag->edges[arrows[in]], arrows[in+1])) {
                 in += 2;
                 changed = true;
             } else {
@@ -29,7 +33,7 @@ bool Path::normalize() {
 }
 
 void Path::precompose(unsigned arrow) {
-    if(arrows.empty() || diag->edges[arrows.back()].inverse != arrow) {
+    if(arrows.empty() || !isInverse(diag->edges[arrows.back()], arrow)) {
         arrows.push_back(arrow);
     } else {
         arrows.resize(arrows.size() - 1);
@@ -40,7 +44,7 @@ void Path::precompose(const Path& p) {
     unsigned pstart = 0, last = arrows.size();
     while(last > 0 && pstart < p.arrows.size()) {
         --last;
-        if(diag->edges[arrows[last]].inverse != p.arrows[pstart]) break;
+        if(!isInverse(diag->edges[arrows[last]], p.arrows[pstart])) break;
         ++pstart;
     }
     arrows.resize(last + p.arrows.size() - pstart);
@@ -48,7 +52,8 @@ void Path::precompose(const Path& p) {
 }
 
 void Path::postcompose(unsigned arrow) {
-    if(arrows.empty() || diag->edges[arrows[0]].inverse != arrow) {
+    src = diag->edges[arrow].src;
+    if(arrows.empty() || !isInverse(diag->edges[arrows[0]], arrow)) {
         arrows.resize(arrows.size() + 1);
         if(arrows.empty()) {
             arrows = { arrow };

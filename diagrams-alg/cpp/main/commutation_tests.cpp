@@ -133,3 +133,22 @@ TEST(Commutation, EpiMono) {
   // Tests is f = g
   ASSERT_TRUE(cacheQuery(cache, 11, 12));
 }
+
+TEST(Commutation, Iso) {
+  DiagramBuilder d;
+  d.addNode("a1");
+  d.addNode("a2");
+  d.addNode("b1");
+  d.addNode("b2");
+  d.addArrow("f", "a1", "b1");
+  d.addArrow("g", "a2", "b2");
+  d.addIso("i1", "a1", "a2");
+  d.addIso("i2", "b1", "b2");
+  d.addFace(d.mkPath("f", "i2"), d.mkPath("i1", "g"));
+  Diagram diag = d.build();
+  CommutationCache cache = buildCmCache("Iso", std::cout, diag, 4);
+  // Tests if f = i1^-1 o g o i2
+  ASSERT_TRUE(cacheQuery(cache, 1, 2));
+  // Tests if g o i2^-1 = i1^-1 o g
+  ASSERT_TRUE(cacheQuery(cache, 6, 7));
+}
